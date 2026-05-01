@@ -382,13 +382,9 @@ function saveHoldings() {
 
 // ── Fetch prices via Yahoo Finance (no API key needed) ──
 async function fetchPrice(ticker) {
-  const now = new Date();
-  const jan1 = new Date(now.getFullYear(), 0, 1);
-  const startTs = Math.floor(jan1.getTime() / 1000);
-  const endTs   = Math.floor(now.getTime() / 1000);
-
-  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${startTs}&period2=${endTs}&includePrePost=false`;
-  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${startTs}&period2=${endTs}`;
+  // Use 1y range to get both proper previousClose (daily) and first-of-year price (YTD)
+  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y&includePrePost=false`;
+  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
 
   const attempts = [
     () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`),
@@ -417,11 +413,19 @@ async function fetchPrice(ticker) {
       const change = price - prevClose;
       const changePct = (change / prevClose) * 100;
 
-      // YTD: first close of the year from the chart data
+      // YTD: find first close on/after Jan 1 of current year
       let ytdPct = null;
       try {
-        const closes = result.indicators?.quote?.[0]?.close;
-        const firstClose = closes?.find(v => v !== null && v !== undefined);
+        const timestamps = result.timestamp;
+        const closes     = result.indicators?.quote?.[0]?.close;
+        const yearStart  = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
+        let firstClose   = null;
+        for (let i = 0; i < timestamps.length; i++) {
+          if (timestamps[i] >= yearStart && closes[i] != null) {
+            firstClose = closes[i];
+            break;
+          }
+        }
         if (firstClose && firstClose > 0) {
           ytdPct = ((price - firstClose) / firstClose) * 100;
         }
