@@ -102,6 +102,14 @@
       transition: border-color 0.2s, transform 0.15s;
       position: relative; overflow: hidden;
     }
+    .stock-card .stock-ticker { text-align: right; }
+    .stock-card .stock-price  { text-align: right; }
+    .stock-card .stock-change { text-align: right; }
+    .stock-card .stock-name   { text-align: right; }
+    .stock-ytd { font-size: 10px; color: var(--dim); text-align: right; margin-top: 1px; letter-spacing: 0.04em; }
+    .stock-ytd.up   { color: var(--up);   opacity: 0.85; }
+    .stock-ytd.down { color: var(--down); opacity: 0.85; }
+    .stock-ytd.flat { color: var(--muted); }
     .stock-card::before {
       content: '';
       position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
@@ -335,18 +343,18 @@
 <script>
 // ── Default holdings (placeholder until user sets their own) ──
 const DEFAULT_HOLDINGS = [
-  { ticker: '^GSPC', name: 'S&P 500',                alloc: 0 },
-  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 0 },
-  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 0 },
-  { ticker: 'FHAPX', name: '',                        alloc: 0 },
-  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0 },
-  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0 },
-  { ticker: 'POWL',  name: 'Powell Industries',       alloc: 0 },
-  { ticker: 'GRID',  name: 'First Trust Grid ETF',    alloc: 0 },
-  { ticker: 'VOLT',  name: '',                        alloc: 0 },
-  { ticker: 'URA',   name: 'Uranium ETF',             alloc: 0 },
-  { ticker: 'DRAM',  name: '',                        alloc: 0 },
-  { ticker: 'DTCR',  name: '',                        alloc: 0 },
+  { ticker: '^GSPC', name: 'S&P 500 (VTSAX proxy)',  alloc: 0 },
+  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81 },
+  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 9 },
+  { ticker: 'FHAPX', name: '401K',                    alloc: 9 },
+  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0.25 },
+  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0.25 },
+  { ticker: 'POWL',  name: 'Powell Industries',       alloc: 0.125 },
+  { ticker: 'GRID',  name: 'First Trust Grid ETF',    alloc: 0.125 },
+  { ticker: 'VOLT',  name: '',                        alloc: 0.083 },
+  { ticker: 'URA',   name: 'Uranium ETF',             alloc: 0.083 },
+  { ticker: 'DRAM',  name: '',                        alloc: 0.083 },
+  { ticker: 'DTCR',  name: '',                        alloc: 0.083 },
 ];
 
 // ── State ──
@@ -355,22 +363,32 @@ let priceData = {}; // ticker -> { price, change, changePct }
 let refreshTimer = null;
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
 
+const HOLDINGS_VERSION = '3';
 function loadHoldings() {
   try {
+    const ver = localStorage.getItem('pt_holdings_ver');
     const saved = localStorage.getItem('pt_holdings');
-    return saved ? JSON.parse(saved) : DEFAULT_HOLDINGS;
+    if (saved && ver === HOLDINGS_VERSION) return JSON.parse(saved);
+    // Version mismatch — reset to new defaults
+    localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
+    return DEFAULT_HOLDINGS;
   } catch { return DEFAULT_HOLDINGS; }
 }
 function saveHoldings() {
   localStorage.setItem('pt_holdings', JSON.stringify(holdings));
+  localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
 }
 
 // ── Fetch prices via Yahoo Finance (no API key needed) ──
 async function fetchPrice(ticker) {
-  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d&includePrePost=false`;
-  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  const startTs = Math.floor(jan1.getTime() / 1000);
+  const endTs   = Math.floor(now.getTime() / 1000);
 
-  // Proxy chain — tries each in order until one works
+  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${startTs}&period2=${endTs}&includePrePost=false`;
+  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${startTs}&period2=${endTs}`;
+
   const attempts = [
     () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`),
     () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl2)}`),
@@ -397,10 +415,21 @@ async function fetchPrice(ticker) {
       if (!price || !prevClose) continue;
       const change = price - prevClose;
       const changePct = (change / prevClose) * 100;
-      return { price, change, changePct, ok: true };
+
+      // YTD: first close of the year from the chart data
+      let ytdPct = null;
+      try {
+        const closes = result.indicators?.quote?.[0]?.close;
+        const firstClose = closes?.find(v => v !== null && v !== undefined);
+        if (firstClose && firstClose > 0) {
+          ytdPct = ((price - firstClose) / firstClose) * 100;
+        }
+      } catch(e) {}
+
+      return { price, change, changePct, ytdPct, ok: true };
     } catch (e) { continue; }
   }
-  return { price: null, change: null, changePct: null, ok: false };
+  return { price: null, change: null, changePct: null, ytdPct: null, ok: false };
 }
 
 async function refreshAll() {
@@ -458,6 +487,9 @@ function renderStocks() {
           <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
         </div>
         <div class="stock-name">${h.name || ''}</div>
+        <div class="stock-ytd ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? 'up' : 'down') : 'flat'}">
+          ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? '+' : '') + d.ytdPct.toFixed(2) + '% YTD' : '— YTD'}
+        </div>
         <div class="alloc-bar-wrap">
           <div class="alloc-bar-bg" style="${h.alloc === 0 ? 'opacity:0.2' : ''}">
             <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
