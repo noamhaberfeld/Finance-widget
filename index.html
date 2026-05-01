@@ -485,11 +485,11 @@ function renderStocks() {
         <div class="stock-right">
           <div class="stock-price ${hasData ? '' : 'shimmer'}">${priceStr}</div>
           <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
+          <div class="stock-ytd ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? 'up' : 'down') : 'flat'}">
+            ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? '+' : '') + d.ytdPct.toFixed(2) + '% YTD' : '— YTD'}
+          </div>
         </div>
         <div class="stock-name">${h.name || ''}</div>
-        <div class="stock-ytd ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? 'up' : 'down') : 'flat'}">
-          ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? '+' : '') + d.ytdPct.toFixed(2) + '% YTD' : '— YTD'}
-        </div>
         <div class="alloc-bar-wrap">
           <div class="alloc-bar-bg" style="${h.alloc === 0 ? 'opacity:0.2' : ''}">
             <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
