@@ -96,20 +96,12 @@
       padding: 14px 16px;
       display: grid;
       grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto auto;
-      gap: 2px 12px;
+      grid-template-rows: auto auto auto;
+      gap: 0 12px;
       cursor: default;
       transition: border-color 0.2s, transform 0.15s;
       position: relative; overflow: hidden;
     }
-    .stock-card .stock-ticker { text-align: right; }
-    .stock-card .stock-price  { text-align: right; }
-    .stock-card .stock-change { text-align: right; }
-    .stock-card .stock-name   { text-align: right; }
-    .stock-ytd { font-size: 10px; color: var(--dim); text-align: right; margin-top: 1px; letter-spacing: 0.04em; }
-    .stock-ytd.up   { color: var(--up);   opacity: 0.85; }
-    .stock-ytd.down { color: var(--down); opacity: 0.85; }
-    .stock-ytd.flat { color: var(--muted); }
     .stock-card::before {
       content: '';
       position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
@@ -122,7 +114,7 @@
     .stock-card:active { transform: scale(0.985); }
 
     .stock-rank {
-      grid-row: 1 / 3; align-self: center;
+      grid-row: 1 / 4; align-self: center;
       font-family: 'Syne', sans-serif;
       font-size: 22px; font-weight: 800; color: var(--border);
       width: 28px; text-align: center; letter-spacing: -0.03em;
@@ -131,14 +123,23 @@
     .stock-ticker {
       font-family: 'Syne', sans-serif;
       font-size: 15px; font-weight: 700; color: var(--text);
-      letter-spacing: 0.04em; align-self: end;
+      letter-spacing: 0.04em; align-self: end; padding-bottom: 1px;
+      text-align: right;
     }
     .stock-name {
       font-size: 10px; color: var(--dim); letter-spacing: 0.06em;
-      align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      text-align: right; padding: 2px 0;
     }
+    .stock-name-ytd {
+      font-size: 10px; letter-spacing: 0.04em;
+      text-align: right; padding-top: 1px;
+    }
+    .stock-name-ytd.up   { color: var(--up);   opacity: 0.85; }
+    .stock-name-ytd.down { color: var(--down);  opacity: 0.85; }
+    .stock-name-ytd.flat { color: var(--muted); }
 
-    .stock-right { grid-row: 1 / 3; align-self: center; text-align: right; }
+    .stock-right { grid-row: 1 / 4; align-self: center; text-align: right; }
     .stock-price {
       font-size: 15px; font-weight: 500; color: var(--text);
     }
@@ -476,6 +477,15 @@ function renderStocks() {
     const priceStr  = hasData ? `$${d.price.toFixed(2)}` : failed ? 'ERR' : '—';
     const changeStr = hasData ? `${sign}${pct.toFixed(2)}%` : failed ? 'fetch failed' : '—';
 
+    // YTD - use cost basis override for NOW, otherwise use fetched ytdPct
+    let ytdPct = hasData ? d.ytdPct : null;
+    if (h.ticker === 'NOW' && hasData && d.price !== null) {
+      ytdPct = ((d.price - 101) / 101) * 100;
+    }
+    const ytdDir = ytdPct !== null ? (ytdPct >= 0 ? 'up' : 'down') : 'flat';
+    const ytdSign = ytdPct !== null && ytdPct >= 0 ? '+' : '';
+    const ytdStr  = ytdPct !== null ? `${ytdSign}${ytdPct.toFixed(2)}% YTD` : '— YTD';
+
     const barWidth = Math.min(h.alloc, 100);
 
     return `
@@ -485,11 +495,11 @@ function renderStocks() {
         <div class="stock-right">
           <div class="stock-price ${hasData ? '' : 'shimmer'}">${priceStr}</div>
           <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
-          <div class="stock-ytd ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? 'up' : 'down') : 'flat'}">
-            ${hasData && d.ytdPct !== null ? (d.ytdPct >= 0 ? '+' : '') + d.ytdPct.toFixed(2) + '% YTD' : '— YTD'}
-          </div>
         </div>
         <div class="stock-name">${h.name || ''}</div>
+        <div class="stock-name-ytd ${ytdDir}">
+          ${ytdStr}
+        </div>
         <div class="alloc-bar-wrap">
           <div class="alloc-bar-bg" style="${h.alloc === 0 ? 'opacity:0.2' : ''}">
             <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
