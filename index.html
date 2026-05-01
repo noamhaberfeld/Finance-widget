@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Portfolio" />
+  <title>Portfolio Tracker</title>
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Portfolio%20Tracker%22%2C%20%22short_name%22%3A%20%22Portfolio%22%2C%20%22description%22%3A%20%22Personal%20stock%20portfolio%20tracker%22%2C%20%22start_url%22%3A%20%22./%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%230a0f1e%22%2C%20%22theme_color%22%3A%20%22%230a0f1e%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2736%27%20fill%3D%27%25230a0f1e%27/%3E%3Cpolyline%20points%3D%2724%2C140%2072%2C88%20104%2C112%20168%2C52%27%20fill%3D%27none%27%20stroke%3D%27%252300d4a0%27%20stroke-width%3D%2714%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #0a0f1e;
+      --surface:   #0f1729;
+      --border:    #1e2a45;
+      --muted:     #3a4a6b;
+      --text:      #e8edf8;
+      --dim:       #7a8aab;
+      --up:        #00d4a0;
+      --down:      #ff4d6d;
+      --accent:    #4d9fff;
+      --gold:      #f0b429;
+      --card-h:    1px solid var(--border);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+    /* ── Header ── */
+    header {
+      padding: 52px 0 20px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .header-left h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--dim);
+    }
+    .header-left .portfolio-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.02em; margin-top: 4px;
+    }
+    .header-left .portfolio-change {
+      font-size: 13px; margin-top: 3px;
+    }
+    .header-right { display: flex; gap: 10px; align-items: center; }
+
+    .btn-icon {
+      width: 38px; height: 38px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--dim); transition: all 0.15s;
+      font-size: 16px;
+    }
+    .btn-icon:active { transform: scale(0.93); background: var(--border); }
+    .btn-icon.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Last updated ── */
+    .last-updated {
+      font-size: 10px; color: var(--muted); letter-spacing: 0.08em;
+      text-align: right; margin-bottom: 18px;
+    }
+
+    /* ── Stock cards ── */
+    .stocks-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+
+    .stock-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 2px 12px;
+      cursor: default;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .stock-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      border-radius: 14px 0 0 14px;
+    }
+    .stock-card.up::before   { background: var(--up); }
+    .stock-card.down::before { background: var(--down); }
+    .stock-card.flat::before { background: var(--muted); }
+
+    .stock-card:active { transform: scale(0.985); }
+
+    .stock-rank {
+      grid-row: 1 / 3; align-self: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 22px; font-weight: 800; color: var(--border);
+      width: 28px; text-align: center; letter-spacing: -0.03em;
+    }
+
+    .stock-ticker {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--text);
+      letter-spacing: 0.04em; align-self: end;
+    }
+    .stock-name {
+      font-size: 10px; color: var(--dim); letter-spacing: 0.06em;
+      align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .stock-right { grid-row: 1 / 3; align-self: center; text-align: right; }
+    .stock-price {
+      font-size: 15px; font-weight: 500; color: var(--text);
+    }
+    .stock-change {
+      font-size: 12px; font-weight: 500; margin-top: 2px;
+    }
+    .stock-change.up   { color: var(--up); }
+    .stock-change.down { color: var(--down); }
+    .stock-change.flat { color: var(--muted); }
+
+    /* Allocation bar */
+    .alloc-bar-wrap {
+      grid-column: 2 / 4;
+      display: flex; align-items: center; gap: 8px; margin-top: 6px;
+    }
+    .alloc-bar-bg {
+      flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    .alloc-bar-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .alloc-bar-fill.up   { background: var(--up); }
+    .alloc-bar-fill.down { background: var(--down); }
+    .alloc-bar-fill.flat { background: var(--muted); }
+    .alloc-pct {
+      font-size: 10px; color: var(--dim); min-width: 34px; text-align: right;
+    }
+
+    /* Loading shimmer */
+    .shimmer {
+      background: linear-gradient(90deg, var(--border) 25%, var(--muted) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px; color: transparent; user-select: none;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ── Divider ── */
+    .section-label {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px;
+    }
+
+    /* ── Edit Portfolio Panel ── */
+    .panel-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px); z-index: 100;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .panel-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .panel {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #111827;
+      border-top: 1px solid var(--border);
+      border-radius: 22px 22px 0 0;
+      padding: 20px 20px calc(28px + env(safe-area-inset-bottom));
+      z-index: 101;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+      max-height: 88dvh; overflow-y: auto;
+    }
+    .panel.open { transform: translateY(0); }
+
+    .panel-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 18px;
+    }
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 17px; font-weight: 700; color: var(--text);
+      margin-bottom: 18px;
+    }
+
+    /* Holdings table */
+    .holdings-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .holdings-table th {
+      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); text-align: left; padding: 0 6px 10px;
+      font-weight: 400;
+    }
+    .holdings-table th:last-child { text-align: right; }
+    .holdings-table td {
+      padding: 8px 6px; border-top: 1px solid var(--border);
+      font-size: 13px; vertical-align: middle;
+    }
+    .holdings-table td input {
+      background: transparent; border: none; outline: none;
+      color: var(--text); font-family: 'DM Mono', monospace;
+      font-size: 13px; width: 100%; padding: 2px 0;
+    }
+    .holdings-table td input.ticker-input { text-transform: uppercase; width: 70px; }
+    .holdings-table td input.alloc-input  { width: 60px; text-align: right; }
+    .holdings-table td input:focus { border-bottom: 1px solid var(--accent); }
+
+    .btn-del {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .btn-del:active { color: var(--down); }
+
+    .alloc-total {
+      font-size: 11px; text-align: right; color: var(--dim); margin-bottom: 16px;
+    }
+    .alloc-total span { font-weight: 500; }
+    .alloc-total span.over  { color: var(--down); }
+    .alloc-total span.exact { color: var(--up); }
+
+    .panel-actions { display: flex; gap: 10px; }
+    .btn-add {
+      flex: 1; padding: 13px;
+      background: transparent; border: 1px dashed var(--border);
+      border-radius: 10px; color: var(--dim);
+      font-family: 'DM Mono', monospace; font-size: 13px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-add:active { border-color: var(--accent); color: var(--accent); }
+
+    .btn-save {
+      flex: 1; padding: 13px;
+      background: var(--accent); border: none;
+      border-radius: 10px; color: #fff;
+      font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-save:active { transform: scale(0.97); opacity: 0.9; }
+
+    /* Error toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--down); color: #fff;
+      padding: 10px 18px; border-radius: 10px;
+      font-size: 12px; z-index: 200; white-space: nowrap;
+      transition: transform 0.3s;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-left">
+      <h1>Portfolio</h1>
+      <div class="portfolio-value" id="totalValue">—</div>
+      <div class="portfolio-change" id="totalChange">&nbsp;</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="refreshBtn" title="Refresh" onclick="refreshAll()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+      <button class="btn-icon" id="editBtn" title="Edit Portfolio" onclick="openPanel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="last-updated" id="lastUpdated">Not yet refreshed</div>
+
+  <div class="section-label">Holdings — sorted by weight</div>
+  <div class="stocks-list" id="stocksList"></div>
+
+</div>
+
+<!-- Edit Panel -->
+<div class="panel-backdrop" id="backdrop" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-handle"></div>
+  <div class="panel-title">Edit Portfolio <span style="font-size:11px;color:var(--dim);font-weight:400;font-family:'DM Mono',monospace">— order = display order</span></div>
+  <table class="holdings-table">
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Name (optional)</th>
+        <th style="text-align:right">% Alloc</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="holdingsBody"></tbody>
+  </table>
+  <div class="alloc-total" id="allocTotal">Total: <span>0%</span></div>
+  <div class="panel-actions">
+    <button class="btn-add" onclick="addRow()">+ Add ticker</button>
+    <button class="btn-save" onclick="saveAndClose()">Save & Refresh</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Default holdings (placeholder until user sets their own) ──
+const DEFAULT_HOLDINGS = [
+  { ticker: '^GSPC', name: 'S&P 500',                alloc: 0 },
+  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 0 },
+  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 0 },
+  { ticker: 'FHAPX', name: '',                        alloc: 0 },
+  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0 },
+  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0 },
+  { ticker: 'POWL',  name: 'Powell Industries',       alloc: 0 },
+  { ticker: 'GRID',  name: 'First Trust Grid ETF',    alloc: 0 },
+  { ticker: 'VOLT',  name: '',                        alloc: 0 },
+  { ticker: 'URA',   name: 'Uranium ETF',             alloc: 0 },
+  { ticker: 'DRAM',  name: '',                        alloc: 0 },
+  { ticker: 'DTCR',  name: '',                        alloc: 0 },
+];
+
+// ── State ──
+let holdings = loadHoldings();
+let priceData = {}; // ticker -> { price, change, changePct }
+let refreshTimer = null;
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+
+function loadHoldings() {
+  try {
+    const saved = localStorage.getItem('pt_holdings');
+    return saved ? JSON.parse(saved) : DEFAULT_HOLDINGS;
+  } catch { return DEFAULT_HOLDINGS; }
+}
+function saveHoldings() {
+  localStorage.setItem('pt_holdings', JSON.stringify(holdings));
+}
+
+// ── Fetch prices via Yahoo Finance (no API key needed) ──
+async function fetchPrice(ticker) {
+  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d&includePrePost=false`;
+  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+
+  // Proxy chain — tries each in order until one works
+  const attempts = [
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`),
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl2)}`),
+    () => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`).then(async r => {
+      const j = await r.json();
+      return new Response(j.contents, { headers: { 'Content-Type': 'application/json' } });
+    }),
+    () => fetch(`https://thingproxy.freeboard.io/fetch/${yahooUrl}`),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const res = await Promise.race([
+        attempt(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+      ]);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) continue;
+      const meta = result.meta;
+      const price = meta.regularMarketPrice;
+      const prevClose = meta.previousClose || meta.chartPreviousClose || meta.regularMarketPreviousClose;
+      if (!price || !prevClose) continue;
+      const change = price - prevClose;
+      const changePct = (change / prevClose) * 100;
+      return { price, change, changePct, ok: true };
+    } catch (e) { continue; }
+  }
+  return { price: null, change: null, changePct: null, ok: false };
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  // Fetch all in parallel
+  const results = await Promise.all(
+    holdings.map(h => fetchPrice(h.ticker).then(d => ({ ticker: h.ticker, ...d })))
+  );
+
+  results.forEach(r => { priceData[r.ticker] = r; });
+
+  renderStocks();
+  renderHeader();
+
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+  btn.classList.remove('spinning');
+
+  // Schedule next refresh
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(refreshAll, REFRESH_INTERVAL);
+}
+
+// ── Render ──
+function renderStocks() {
+  const list = document.getElementById('stocksList');
+
+  // Use manual order (as defined / saved by user)
+  const sorted = [...holdings];
+
+  list.innerHTML = sorted.map((h, i) => {
+    const d = priceData[h.ticker];
+    const hasData = d && d.ok && d.price !== null;
+
+    const pct = hasData ? d.changePct : null;
+    const dir = pct === null ? 'flat' : pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+    const sign = pct !== null && pct > 0 ? '+' : '';
+
+    const failed = d && !d.ok;
+    const priceStr  = hasData ? `$${d.price.toFixed(2)}` : failed ? 'ERR' : '—';
+    const changeStr = hasData ? `${sign}${pct.toFixed(2)}%` : failed ? 'fetch failed' : '—';
+
+    const barWidth = Math.min(h.alloc, 100);
+
+    return `
+      <div class="stock-card ${dir}">
+        <div class="stock-rank">${String(i + 1).padStart(2, '0')}</div>
+        <div class="stock-ticker">${h.ticker}</div>
+        <div class="stock-right">
+          <div class="stock-price ${hasData ? '' : 'shimmer'}">${priceStr}</div>
+          <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
+        </div>
+        <div class="stock-name">${h.name || ''}</div>
+        <div class="alloc-bar-wrap">
+          <div class="alloc-bar-bg" style="${h.alloc === 0 ? 'opacity:0.2' : ''}">
+            <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
+          </div>
+          <div class="alloc-pct">${h.alloc > 0 ? h.alloc + '%' : '—'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHeader() {
+  // Weighted daily change
+  let weightedChange = 0;
+  let allLoaded = true;
+  holdings.forEach(h => {
+    const d = priceData[h.ticker];
+    if (d && d.ok && d.changePct !== null) {
+      weightedChange += (h.alloc / 100) * d.changePct;
+    } else {
+      allLoaded = false;
+    }
+  });
+
+  const totalEl  = document.getElementById('totalValue');
+  const changeEl = document.getElementById('totalChange');
+
+  totalEl.textContent = 'My Portfolio';
+
+  const hasAllocs = holdings.some(h => h.alloc > 0);
+
+  if ((allLoaded || Object.keys(priceData).length > 0) && hasAllocs) {
+    const sign = weightedChange >= 0 ? '+' : '';
+    const dir  = weightedChange >= 0 ? 'up' : 'down';
+    changeEl.style.color = dir === 'up' ? 'var(--up)' : 'var(--down)';
+    changeEl.textContent = `${sign}${weightedChange.toFixed(2)}% today (weighted)`;
+  } else if (!hasAllocs) {
+    changeEl.style.color = 'var(--dim)';
+    changeEl.textContent = 'Set allocations to see weighted change';
+  }
+}
+
+// ── Edit Panel ──
+function openPanel() {
+  renderHoldingsTable();
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+}
+
+function renderHoldingsTable() {
+  const tbody = document.getElementById('holdingsBody');
+  tbody.innerHTML = holdings.map((h, i) => `
+    <tr data-i="${i}">
+      <td><input class="ticker-input" value="${h.ticker}" placeholder="TICKER"
+          oninput="holdings[${i}].ticker = this.value.toUpperCase().trim()" /></td>
+      <td><input value="${h.name || ''}" placeholder="Name"
+          oninput="holdings[${i}].name = this.value" /></td>
+      <td><input class="alloc-input" type="number" min="0" max="100" step="0.5"
+          value="${h.alloc}" oninput="holdings[${i}].alloc = parseFloat(this.value)||0; updateAllocTotal()" /></td>
+      <td><button class="btn-del" onclick="deleteRow(${i})">×</button></td>
+    </tr>
+  `).join('');
+  updateAllocTotal();
+}
+
+function updateAllocTotal() {
+  const total = holdings.reduce((s, h) => s + (parseFloat(h.alloc) || 0), 0);
+  const el = document.getElementById('allocTotal');
+  const cls = Math.abs(total - 100) < 0.01 ? 'exact' : total > 100 ? 'over' : '';
+  el.innerHTML = `Total: <span class="${cls}">${total.toFixed(1)}%</span>`;
+}
+
+function addRow() {
+  holdings.push({ ticker: '', name: '', alloc: 0 });
+  renderHoldingsTable();
+  // Focus new row
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.ticker-input');
+    inputs[inputs.length - 1]?.focus();
+  }, 50);
+}
+
+function deleteRow(i) {
+  holdings.splice(i, 1);
+  renderHoldingsTable();
+}
+
+function saveAndClose() {
+  // Validate
+  const tickers = holdings.map(h => h.ticker.trim()).filter(Boolean);
+  if (tickers.length === 0) { showToast('Add at least one ticker'); return; }
+  const total = holdings.reduce((s, h) => s + (parseFloat(h.alloc) || 0), 0);
+  if (total > 100.1) { showToast(`Allocations total ${total.toFixed(1)}% — must be ≤ 100%`); return; }
+
+  // Clean up empty rows
+  holdings = holdings.filter(h => h.ticker.trim());
+  saveHoldings();
+  closePanel();
+  priceData = {};
+  renderStocks();
+  refreshAll();
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Init ──
+renderStocks();
+refreshAll();
+</script>
+</body>
+</html>
