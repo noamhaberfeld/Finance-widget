@@ -408,18 +408,28 @@ async function fetchPrice(ticker) {
       if (!result) continue;
       const meta = result.meta;
       const price = meta.regularMarketPrice;
-      const prevClose = meta.previousClose || meta.chartPreviousClose || meta.regularMarketPreviousClose;
-      if (!price || !prevClose) continue;
+      if (!price) continue;
+
+      const timestamps = result.timestamp || [];
+      const closes     = result.indicators?.quote?.[0]?.close || [];
+
+      // Daily: use second-to-last close in array (avoids meta.previousClose issues with indices)
+      const validCloses = [];
+      for (let i = 0; i < closes.length; i++) {
+        if (closes[i] != null) validCloses.push(closes[i]);
+      }
+      const prevClose = validCloses.length >= 2
+        ? validCloses[validCloses.length - 2]
+        : (meta.previousClose || meta.chartPreviousClose || meta.regularMarketPreviousClose);
+      if (!prevClose) continue;
       const change = price - prevClose;
       const changePct = (change / prevClose) * 100;
 
       // YTD: find first close on/after Jan 1 of current year
       let ytdPct = null;
       try {
-        const timestamps = result.timestamp;
-        const closes     = result.indicators?.quote?.[0]?.close;
-        const yearStart  = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
-        let firstClose   = null;
+        const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
+        let firstClose  = null;
         for (let i = 0; i < timestamps.length; i++) {
           if (timestamps[i] >= yearStart && closes[i] != null) {
             firstClose = closes[i];
