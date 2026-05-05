@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Portfolio" />
   <title>Portfolio Tracker</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Portfolio%20Tracker%22%2C%20%22short_name%22%3A%20%22Portfolio%22%2C%20%22description%22%3A%20%22Personal%20stock%20portfolio%20tracker%22%2C%20%22start_url%22%3A%20%22./%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%230a0f1e%22%2C%20%22theme_color%22%3A%20%22%230a0f1e%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2736%27%20fill%3D%27%25230a0f1e%27/%3E%3Cpolyline%20points%3D%2724%2C140%2072%2C88%20104%2C112%20168%2C52%27%20fill%3D%27none%27%20stroke%3D%27%252300d4a0%27%20stroke-width%3D%2714%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
@@ -96,8 +96,8 @@
       padding: 14px 16px;
       display: grid;
       grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto auto;
-      gap: 2px 12px;
+      grid-template-rows: auto auto auto;
+      gap: 0 12px;
       cursor: default;
       transition: border-color 0.2s, transform 0.15s;
       position: relative; overflow: hidden;
@@ -114,7 +114,7 @@
     .stock-card:active { transform: scale(0.985); }
 
     .stock-rank {
-      grid-row: 1 / 3; align-self: center;
+      grid-row: 1 / 4; align-self: center;
       font-family: 'Syne', sans-serif;
       font-size: 22px; font-weight: 800; color: var(--border);
       width: 28px; text-align: center; letter-spacing: -0.03em;
@@ -123,14 +123,23 @@
     .stock-ticker {
       font-family: 'Syne', sans-serif;
       font-size: 15px; font-weight: 700; color: var(--text);
-      letter-spacing: 0.04em; align-self: end;
+      letter-spacing: 0.04em; align-self: end; padding-bottom: 1px;
+      text-align: right;
     }
     .stock-name {
       font-size: 10px; color: var(--dim); letter-spacing: 0.06em;
-      align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      text-align: right; padding: 2px 0;
     }
+    .stock-name-ytd {
+      font-size: 10px; letter-spacing: 0.04em;
+      text-align: right; padding-top: 1px;
+    }
+    .stock-name-ytd.up   { color: var(--up);   opacity: 0.85; }
+    .stock-name-ytd.down { color: var(--down);  opacity: 0.85; }
+    .stock-name-ytd.flat { color: var(--muted); }
 
-    .stock-right { grid-row: 1 / 3; align-self: center; text-align: right; }
+    .stock-right { grid-row: 1 / 4; align-self: center; text-align: right; }
     .stock-price {
       font-size: 15px; font-weight: 500; color: var(--text);
     }
@@ -311,7 +320,7 @@
 <div class="panel-backdrop" id="backdrop" onclick="closePanel()"></div>
 <div class="panel" id="panel">
   <div class="panel-handle"></div>
-  <div class="panel-title">Edit Portfolio</div>
+  <div class="panel-title">Edit Portfolio <span style="font-size:11px;color:var(--dim);font-weight:400;font-family:'DM Mono',monospace">— order = display order</span></div>
   <table class="holdings-table">
     <thead>
       <tr>
@@ -335,47 +344,116 @@
 <script>
 // ── Default holdings (placeholder until user sets their own) ──
 const DEFAULT_HOLDINGS = [
-  { ticker: 'VTSAX', name: 'Vanguard Total Stock',  alloc: 70 },
-  { ticker: 'NOW',   name: 'ServiceNow',             alloc: 15 },
-  { ticker: 'XLU',   name: 'Utilities ETF',          alloc: 7.5 },
-  { ticker: 'AIPO',  name: 'AI-Powered ETF',         alloc: 4.5 },
-  { ticker: 'NLR',   name: 'Nuclear ETF',             alloc: 3 },
+  { ticker: '^GSPC', name: 'S&P 500 (VTSAX proxy)',  alloc: 0 },
+  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81 },
+  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 9 },
+  { ticker: 'FHAPX', name: '401K',                    alloc: 9 },
+  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0.25 },
+  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0.25 },
+  { ticker: 'POWL',  name: 'Powell Industries',       alloc: 0.125 },
+  { ticker: 'GRID',  name: 'First Trust Grid ETF',    alloc: 0.125 },
+  { ticker: 'VOLT',  name: '',                        alloc: 0.083 },
+  { ticker: 'URA',   name: 'Uranium ETF',             alloc: 0.083 },
+  { ticker: 'DRAM',  name: '',                        alloc: 0.083 },
+  { ticker: 'DTCR',  name: '',                        alloc: 0.083 },
 ];
 
 // ── State ──
 let holdings = loadHoldings();
 let priceData = {}; // ticker -> { price, change, changePct }
 let refreshTimer = null;
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+const REFRESH_INTERVAL_LIVE   = 1 * 60 * 1000;  // 1 min during market hours
+const REFRESH_INTERVAL_CLOSED = 5 * 60 * 1000;  // 5 min after hours
+let marketState = 'CLOSED';
 
+const HOLDINGS_VERSION = '3';
 function loadHoldings() {
   try {
+    const ver = localStorage.getItem('pt_holdings_ver');
     const saved = localStorage.getItem('pt_holdings');
-    return saved ? JSON.parse(saved) : DEFAULT_HOLDINGS;
+    if (saved && ver === HOLDINGS_VERSION) return JSON.parse(saved);
+    // Version mismatch — reset to new defaults
+    localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
+    return DEFAULT_HOLDINGS;
   } catch { return DEFAULT_HOLDINGS; }
 }
 function saveHoldings() {
   localStorage.setItem('pt_holdings', JSON.stringify(holdings));
+  localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
 }
 
 // ── Fetch prices via Yahoo Finance (no API key needed) ──
 async function fetchPrice(ticker) {
-  try {
-    // Use allorigins CORS proxy to hit Yahoo Finance
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxy);
-    const outer = await res.json();
-    const data = JSON.parse(outer.contents);
-    const meta = data.chart.result[0].meta;
-    const price = meta.regularMarketPrice;
-    const prevClose = meta.previousClose || meta.chartPreviousClose;
-    const change = price - prevClose;
-    const changePct = (change / prevClose) * 100;
-    return { price, change, changePct, ok: true };
-  } catch (e) {
-    return { price: null, change: null, changePct: null, ok: false };
+  // Use 1y range to get both proper previousClose (daily) and first-of-year price (YTD)
+  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y&includePrePost=false`;
+  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
+
+  const attempts = [
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`),
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl2)}`),
+    () => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`).then(async r => {
+      const j = await r.json();
+      return new Response(j.contents, { headers: { 'Content-Type': 'application/json' } });
+    }),
+    () => fetch(`https://thingproxy.freeboard.io/fetch/${yahooUrl}`),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const res = await Promise.race([
+        attempt(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+      ]);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) continue;
+      const meta = result.meta;
+      const price = meta.regularMarketPrice;
+      if (!price) continue;
+
+      const timestamps = result.timestamp || [];
+      const closes     = result.indicators?.quote?.[0]?.close || [];
+
+      // Daily: use second-to-last close in array (avoids meta.previousClose issues with indices)
+      const validCloses = [];
+      for (let i = 0; i < closes.length; i++) {
+        if (closes[i] != null) validCloses.push(closes[i]);
+      }
+      const prevClose = validCloses.length >= 2
+        ? validCloses[validCloses.length - 2]
+        : (meta.previousClose || meta.chartPreviousClose || meta.regularMarketPreviousClose);
+      if (!prevClose) continue;
+      const change = price - prevClose;
+      const changePct = (change / prevClose) * 100;
+
+      // YTD: find first close on/after Jan 1 of current year
+      let ytdPct = null;
+      try {
+        const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
+        let firstClose  = null;
+        for (let i = 0; i < timestamps.length; i++) {
+          if (timestamps[i] >= yearStart && closes[i] != null) {
+            firstClose = closes[i];
+            break;
+          }
+        }
+        if (firstClose && firstClose > 0) {
+          ytdPct = ((price - firstClose) / firstClose) * 100;
+        }
+      } catch(e) {}
+
+      // Use live price during market hours, official close after hours
+      const state = meta.marketState || 'CLOSED'; // REGULAR, PRE, POST, CLOSED
+      const isLive = state === 'REGULAR';
+      const displayPrice = isLive
+        ? (meta.regularMarketPrice || price)
+        : (meta.regularMarketPrice || price);
+
+      return { price: displayPrice, change, changePct, ytdPct, marketState: state, isLive, ok: true };
+    } catch (e) { continue; }
   }
+  return { price: null, change: null, changePct: null, ytdPct: null, ok: false };
 }
 
 async function refreshAll() {
@@ -393,14 +471,20 @@ async function refreshAll() {
   renderHeader();
 
   const now = new Date();
+  const anyLive2 = Object.values(priceData).some(d => d.isLive);
+  const statusLabel = anyLive2 ? '● LIVE' : '○ CLOSED';
   document.getElementById('lastUpdated').textContent =
-    `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    `${statusLabel} · Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('lastUpdated').style.color = anyLive2 ? 'var(--up)' : 'var(--muted)';
 
   btn.classList.remove('spinning');
 
-  // Schedule next refresh
+  // Adapt refresh rate: faster during market hours
+  const anyLive = Object.values(priceData).some(d => d.isLive);
+  marketState = anyLive ? 'OPEN' : 'CLOSED';
+  const interval = anyLive ? REFRESH_INTERVAL_LIVE : REFRESH_INTERVAL_CLOSED;
   clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshAll, REFRESH_INTERVAL);
+  refreshTimer = setTimeout(refreshAll, interval);
 }
 
 // ── Render ──
@@ -546,5 +630,3 @@ function showToast(msg) {
 renderStocks();
 refreshAll();
 </script>
-</body>
-</html>
