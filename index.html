@@ -362,7 +362,9 @@ const DEFAULT_HOLDINGS = [
 let holdings = loadHoldings();
 let priceData = {}; // ticker -> { price, change, changePct }
 let refreshTimer = null;
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+const REFRESH_INTERVAL_LIVE   = 1 * 60 * 1000;  // 1 min during market hours
+const REFRESH_INTERVAL_CLOSED = 5 * 60 * 1000;  // 5 min after hours
+let marketState = 'CLOSED';
 
 const HOLDINGS_VERSION = '3';
 function loadHoldings() {
@@ -441,7 +443,14 @@ async function fetchPrice(ticker) {
         }
       } catch(e) {}
 
-      return { price, change, changePct, ytdPct, ok: true };
+      // Use live price during market hours, official close after hours
+      const state = meta.marketState || 'CLOSED'; // REGULAR, PRE, POST, CLOSED
+      const isLive = state === 'REGULAR';
+      const displayPrice = isLive
+        ? (meta.regularMarketPrice || price)
+        : (meta.regularMarketPrice || price);
+
+      return { price: displayPrice, change, changePct, ytdPct, marketState: state, isLive, ok: true };
     } catch (e) { continue; }
   }
   return { price: null, change: null, changePct: null, ytdPct: null, ok: false };
@@ -462,14 +471,20 @@ async function refreshAll() {
   renderHeader();
 
   const now = new Date();
+  const anyLive2 = Object.values(priceData).some(d => d.isLive);
+  const statusLabel = anyLive2 ? '● LIVE' : '○ CLOSED';
   document.getElementById('lastUpdated').textContent =
-    `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    `${statusLabel} · Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('lastUpdated').style.color = anyLive2 ? 'var(--up)' : 'var(--muted)';
 
   btn.classList.remove('spinning');
 
-  // Schedule next refresh
+  // Adapt refresh rate: faster during market hours
+  const anyLive = Object.values(priceData).some(d => d.isLive);
+  marketState = anyLive ? 'OPEN' : 'CLOSED';
+  const interval = anyLive ? REFRESH_INTERVAL_LIVE : REFRESH_INTERVAL_CLOSED;
   clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshAll, REFRESH_INTERVAL);
+  refreshTimer = setTimeout(refreshAll, interval);
 }
 
 // ── Render ──
@@ -491,10 +506,19 @@ function renderStocks() {
     const priceStr  = hasData ? `$${d.price.toFixed(2)}` : failed ? 'ERR' : '—';
     const changeStr = hasData ? `${sign}${pct.toFixed(2)}%` : failed ? 'fetch failed' : '—';
 
-    // YTD - use cost basis override for NOW, otherwise use fetched ytdPct
+    // YTD - use cost basis overrides where set
+    const costBasis = {
+      'NOW':   101,
+      'CEG':   305.68,
+      'MU':    504.1,
+      'POWL':  255,
+      'GRID':  185.2,
+      'VOLT':  38.5,
+      'URA':   54.46,
+    };
     let ytdPct = hasData ? d.ytdPct : null;
-    if (h.ticker === 'NOW' && hasData && d.price !== null) {
-      ytdPct = ((d.price - 101) / 101) * 100;
+    if (costBasis[h.ticker] && hasData && d.price !== null) {
+      ytdPct = ((d.price - costBasis[h.ticker]) / costBasis[h.ticker]) * 100;
     }
     const ytdDir = ytdPct !== null ? (ytdPct >= 0 ? 'up' : 'down') : 'flat';
     const ytdSign = ytdPct !== null && ytdPct >= 0 ? '+' : '';
@@ -507,7 +531,9 @@ function renderStocks() {
         <div class="stock-rank">${String(i + 1).padStart(2, '0')}</div>
         <div class="stock-ticker">${h.ticker}</div>
         <div class="stock-right">
-          <div class="stock-price ${hasData ? '' : 'shimmer'}">${priceStr}</div>
+          <div class="stock-price \${hasData ? '' : 'shimmer'}">
+            \${hasData && d.isLive ? '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--up);margin-right:4px;vertical-align:middle;"></span>' : ''}\${priceStr}
+          </div>
           <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
         </div>
         <div class="stock-name">${h.name || ''}</div>
