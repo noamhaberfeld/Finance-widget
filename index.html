@@ -8,286 +8,134 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Portfolio" />
   <title>Portfolio Tracker</title>
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Portfolio%20Tracker%22%2C%20%22short_name%22%3A%20%22Portfolio%22%2C%20%22description%22%3A%20%22Personal%20stock%20portfolio%20tracker%22%2C%20%22start_url%22%3A%20%22./%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%230a0f1e%22%2C%20%22theme_color%22%3A%20%22%230a0f1e%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2736%27%20fill%3D%27%25230a0f1e%27/%3E%3Cpolyline%20points%3D%2724%2C140%2072%2C88%20104%2C112%20168%2C52%27%20fill%3D%27none%27%20stroke%3D%27%252300d4a0%27%20stroke-width%3D%2714%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D" />
+  <script>
+    const _m = {name:"Portfolio Tracker",short_name:"Portfolio",display:"standalone",background_color:"#0a0f1e",theme_color:"#0a0f1e",start_url:"./",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%230a0f1e'/><polyline points='24,140 72,88 104,112 168,52' fill='none' stroke='%2300d4a0' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/></svg>",sizes:"192x192",type:"image/svg+xml"}]};
+    const _b = new Blob([JSON.stringify(_m)],{type:'application/manifest+json'});
+    const _l = document.createElement('link'); _l.rel='manifest'; _l.href=URL.createObjectURL(_b);
+    document.currentScript.after(_l);
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
-
   <style>
     :root {
-      --bg:        #0a0f1e;
-      --surface:   #0f1729;
-      --border:    #1e2a45;
-      --muted:     #3a4a6b;
-      --text:      #e8edf8;
-      --dim:       #7a8aab;
-      --up:        #00d4a0;
-      --down:      #ff4d6d;
-      --accent:    #4d9fff;
-      --gold:      #f0b429;
-      --card-h:    1px solid var(--border);
+      --bg:      #0a0f1e;
+      --surface: #0f1729;
+      --border:  #1e2a45;
+      --muted:   #3a4a6b;
+      --text:    #e8edf8;
+      --dim:     #7a8aab;
+      --up:      #00d4a0;
+      --down:    #ff4d6d;
+      --accent:  #4d9fff;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'DM Mono', monospace;
-      min-height: 100dvh;
-      overflow-x: hidden;
+      min-height: 100dvh; overflow-x: hidden;
       padding-bottom: env(safe-area-inset-bottom);
     }
-
-    /* ── Noise texture overlay ── */
     body::before {
-      content: '';
-      position: fixed; inset: 0;
+      content: ''; position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
       pointer-events: none; z-index: 0;
     }
-
     .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 16px; }
 
-    /* ── Header ── */
-    header {
-      padding: 52px 0 20px;
-      display: flex; align-items: flex-end; justify-content: space-between;
-    }
-    .header-left h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--dim);
-    }
-    .header-left .portfolio-value {
-      font-family: 'Syne', sans-serif;
-      font-size: 32px; font-weight: 800; color: var(--text);
-      letter-spacing: -0.02em; margin-top: 4px;
-    }
-    .header-left .portfolio-change {
-      font-size: 13px; margin-top: 3px;
-    }
+    header { padding: 52px 0 20px; display: flex; align-items: flex-end; justify-content: space-between; }
+    .header-left h1 { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+    .portfolio-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-top: 4px; }
+    .portfolio-change { font-size: 13px; margin-top: 3px; }
     .header-right { display: flex; gap: 10px; align-items: center; }
-
-    .btn-icon {
-      width: 38px; height: 38px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--dim); transition: all 0.15s;
-      font-size: 16px;
-    }
+    .btn-icon { width: 38px; height: 38px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--dim); transition: all 0.15s; }
     .btn-icon:active { transform: scale(0.93); background: var(--border); }
     .btn-icon.spinning svg { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Last updated ── */
-    .last-updated {
-      font-size: 10px; color: var(--muted); letter-spacing: 0.08em;
-      text-align: right; margin-bottom: 18px;
-    }
+    .last-updated { font-size: 10px; letter-spacing: 0.08em; text-align: right; margin-bottom: 18px; color: var(--muted); }
+    .section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 
-    /* ── Stock cards ── */
     .stocks-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
 
     .stock-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
       padding: 14px 16px;
       display: grid;
       grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto auto auto;
+      grid-template-rows: auto auto auto auto;
       gap: 0 12px;
-      cursor: default;
-      transition: border-color 0.2s, transform 0.15s;
-      position: relative; overflow: hidden;
+      cursor: default; transition: transform 0.15s; position: relative; overflow: hidden;
     }
-    .stock-card::before {
-      content: '';
-      position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-      border-radius: 14px 0 0 14px;
-    }
+    .stock-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 14px 0 0 14px; }
     .stock-card.up::before   { background: var(--up); }
     .stock-card.down::before { background: var(--down); }
     .stock-card.flat::before { background: var(--muted); }
-
     .stock-card:active { transform: scale(0.985); }
 
-    .stock-rank {
-      grid-row: 1 / 4; align-self: center;
-      font-family: 'Syne', sans-serif;
-      font-size: 22px; font-weight: 800; color: var(--border);
-      width: 28px; text-align: center; letter-spacing: -0.03em;
-    }
+    /* Col 1: rank spans all rows */
+    .stock-rank { grid-column: 1; grid-row: 1 / 5; align-self: center; font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--border); width: 28px; text-align: center; letter-spacing: -0.03em; }
 
-    .stock-ticker {
-      font-family: 'Syne', sans-serif;
-      font-size: 15px; font-weight: 700; color: var(--text);
-      letter-spacing: 0.04em; align-self: end; padding-bottom: 1px;
-      text-align: right;
-    }
-    .stock-name {
-      font-size: 10px; color: var(--dim); letter-spacing: 0.06em;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      text-align: right; padding: 2px 0;
-    }
-    .stock-name-ytd {
-      font-size: 10px; letter-spacing: 0.04em;
-      text-align: right; padding-top: 1px;
-    }
-    .stock-name-ytd.up   { color: var(--up);   opacity: 0.85; }
-    .stock-name-ytd.down { color: var(--down);  opacity: 0.85; }
-    .stock-name-ytd.flat { color: var(--muted); }
+    /* Col 2: ticker / name / ytd / bar */
+    .stock-ticker { grid-column: 2; grid-row: 1; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.04em; text-align: right; padding-bottom: 3px; }
+    .stock-name   { grid-column: 2; grid-row: 2; font-size: 10px; color: var(--dim); letter-spacing: 0.06em; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 0; }
+    .stock-ytd    { grid-column: 2; grid-row: 3; font-size: 10px; text-align: right; padding: 2px 0 6px; letter-spacing: 0.04em; }
+    .stock-ytd.up   { color: var(--up);   opacity: 0.9; }
+    .stock-ytd.down { color: var(--down); opacity: 0.9; }
+    .stock-ytd.flat { color: var(--muted); }
 
-    .stock-right { grid-row: 1 / 4; align-self: center; text-align: right; }
-    .stock-price {
-      font-size: 15px; font-weight: 500; color: var(--text);
-    }
-    .stock-change {
-      font-size: 12px; font-weight: 500; margin-top: 2px;
-    }
+    /* Col 3: price + daily % — spans rows 1-3 */
+    .stock-right { grid-column: 3; grid-row: 1 / 4; align-self: center; text-align: right; }
+    .stock-price  { font-size: 15px; font-weight: 500; color: var(--text); }
+    .stock-change { font-size: 12px; font-weight: 500; margin-top: 3px; }
     .stock-change.up   { color: var(--up); }
     .stock-change.down { color: var(--down); }
     .stock-change.flat { color: var(--muted); }
 
-    /* Allocation bar */
-    .alloc-bar-wrap {
-      grid-column: 2 / 4;
-      display: flex; align-items: center; gap: 8px; margin-top: 6px;
-    }
-    .alloc-bar-bg {
-      flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;
-    }
-    .alloc-bar-fill {
-      height: 100%; border-radius: 2px;
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
+    /* Row 4: allocation bar spans col 2+3 */
+    .alloc-bar-wrap { grid-column: 2 / 4; grid-row: 4; display: flex; align-items: center; gap: 8px; }
+    .alloc-bar-bg   { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .alloc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
     .alloc-bar-fill.up   { background: var(--up); }
     .alloc-bar-fill.down { background: var(--down); }
     .alloc-bar-fill.flat { background: var(--muted); }
-    .alloc-pct {
-      font-size: 10px; color: var(--dim); min-width: 34px; text-align: right;
-    }
+    .alloc-pct { font-size: 10px; color: var(--dim); min-width: 34px; text-align: right; }
 
-    /* Loading shimmer */
-    .shimmer {
-      background: linear-gradient(90deg, var(--border) 25%, var(--muted) 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 4px; color: transparent; user-select: none;
-    }
+    .shimmer { background: linear-gradient(90deg, var(--border) 25%, var(--muted) 50%, var(--border) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; color: transparent; user-select: none; }
     @keyframes shimmer { to { background-position: -200% 0; } }
 
-    /* ── Divider ── */
-    .section-label {
-      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 12px;
-    }
-
-    /* ── Edit Portfolio Panel ── */
-    .panel-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px); z-index: 100;
-      opacity: 0; pointer-events: none; transition: opacity 0.25s;
-    }
+    /* Panel */
+    .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
     .panel-backdrop.open { opacity: 1; pointer-events: all; }
-
-    .panel {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #111827;
-      border-top: 1px solid var(--border);
-      border-radius: 22px 22px 0 0;
-      padding: 20px 20px calc(28px + env(safe-area-inset-bottom));
-      z-index: 101;
-      transform: translateY(100%);
-      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-      max-height: 88dvh; overflow-y: auto;
-    }
+    .panel { position: fixed; bottom: 0; left: 0; right: 0; background: #111827; border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; padding: 20px 20px calc(28px + env(safe-area-inset-bottom)); z-index: 101; transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1); max-height: 88dvh; overflow-y: auto; }
     .panel.open { transform: translateY(0); }
-
-    .panel-handle {
-      width: 36px; height: 4px; background: var(--border);
-      border-radius: 2px; margin: 0 auto 18px;
-    }
-    .panel-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 17px; font-weight: 700; color: var(--text);
-      margin-bottom: 18px;
-    }
-
-    /* Holdings table */
+    .panel-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+    .panel-title  { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
     .holdings-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    .holdings-table th {
-      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--muted); text-align: left; padding: 0 6px 10px;
-      font-weight: 400;
-    }
-    .holdings-table th:last-child { text-align: right; }
-    .holdings-table td {
-      padding: 8px 6px; border-top: 1px solid var(--border);
-      font-size: 13px; vertical-align: middle;
-    }
-    .holdings-table td input {
-      background: transparent; border: none; outline: none;
-      color: var(--text); font-family: 'DM Mono', monospace;
-      font-size: 13px; width: 100%; padding: 2px 0;
-    }
+    .holdings-table th { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 0 6px 10px; font-weight: 400; }
+    .holdings-table td { padding: 8px 6px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .holdings-table td input { background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; width: 100%; padding: 2px 0; }
     .holdings-table td input.ticker-input { text-transform: uppercase; width: 70px; }
     .holdings-table td input.alloc-input  { width: 60px; text-align: right; }
     .holdings-table td input:focus { border-bottom: 1px solid var(--accent); }
-
-    .btn-del {
-      background: none; border: none; color: var(--muted);
-      cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;
-      transition: color 0.15s;
-    }
+    .btn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; }
     .btn-del:active { color: var(--down); }
-
-    .alloc-total {
-      font-size: 11px; text-align: right; color: var(--dim); margin-bottom: 16px;
-    }
+    .alloc-total { font-size: 11px; text-align: right; color: var(--dim); margin-bottom: 16px; }
     .alloc-total span { font-weight: 500; }
     .alloc-total span.over  { color: var(--down); }
     .alloc-total span.exact { color: var(--up); }
-
     .panel-actions { display: flex; gap: 10px; }
-    .btn-add {
-      flex: 1; padding: 13px;
-      background: transparent; border: 1px dashed var(--border);
-      border-radius: 10px; color: var(--dim);
-      font-family: 'DM Mono', monospace; font-size: 13px;
-      cursor: pointer; transition: all 0.15s;
-    }
+    .btn-add  { flex: 1; padding: 13px; background: transparent; border: 1px dashed var(--border); border-radius: 10px; color: var(--dim); font-family: 'DM Mono', monospace; font-size: 13px; cursor: pointer; }
     .btn-add:active { border-color: var(--accent); color: var(--accent); }
-
-    .btn-save {
-      flex: 1; padding: 13px;
-      background: var(--accent); border: none;
-      border-radius: 10px; color: #fff;
-      font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-      cursor: pointer; transition: all 0.15s;
-    }
+    .btn-save { flex: 1; padding: 13px; background: var(--accent); border: none; border-radius: 10px; color: #fff; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
     .btn-save:active { transform: scale(0.97); opacity: 0.9; }
-
-    /* Error toast */
-    .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: var(--down); color: #fff;
-      padding: 10px 18px; border-radius: 10px;
-      font-size: 12px; z-index: 200; white-space: nowrap;
-      transition: transform 0.3s;
-    }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--down); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 12px; z-index: 200; white-space: nowrap; transition: transform 0.3s; }
     .toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
 </head>
 <body>
 <div class="app">
-
   <header>
     <div class="header-left">
       <h1>Portfolio</h1>
@@ -295,12 +143,12 @@
       <div class="portfolio-change" id="totalChange">&nbsp;</div>
     </div>
     <div class="header-right">
-      <button class="btn-icon" id="refreshBtn" title="Refresh" onclick="refreshAll()">
+      <button class="btn-icon" id="refreshBtn" onclick="refreshAll()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
       </button>
-      <button class="btn-icon" id="editBtn" title="Edit Portfolio" onclick="openPanel()">
+      <button class="btn-icon" onclick="openPanel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
           <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
@@ -308,28 +156,17 @@
       </button>
     </div>
   </header>
-
   <div class="last-updated" id="lastUpdated">Not yet refreshed</div>
-
   <div class="section-label">Holdings — sorted by weight</div>
   <div class="stocks-list" id="stocksList"></div>
-
 </div>
 
-<!-- Edit Panel -->
 <div class="panel-backdrop" id="backdrop" onclick="closePanel()"></div>
 <div class="panel" id="panel">
   <div class="panel-handle"></div>
   <div class="panel-title">Edit Portfolio <span style="font-size:11px;color:var(--dim);font-weight:400;font-family:'DM Mono',monospace">— order = display order</span></div>
   <table class="holdings-table">
-    <thead>
-      <tr>
-        <th>Ticker</th>
-        <th>Name (optional)</th>
-        <th style="text-align:right">% Alloc</th>
-        <th></th>
-      </tr>
-    </thead>
+    <thead><tr><th>Ticker</th><th>Name (optional)</th><th style="text-align:right">% Alloc</th><th></th></tr></thead>
     <tbody id="holdingsBody"></tbody>
   </table>
   <div class="alloc-total" id="allocTotal">Total: <span>0%</span></div>
@@ -338,18 +175,16 @@
     <button class="btn-save" onclick="saveAndClose()">Save & Refresh</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Default holdings (placeholder until user sets their own) ──
 const DEFAULT_HOLDINGS = [
-  { ticker: '^GSPC', name: 'S&P 500 (VTSAX proxy)',  alloc: 0 },
-  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81 },
-  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 9 },
-  { ticker: 'FHAPX', name: '401K',                    alloc: 9 },
-  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0.25 },
-  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0.25 },
+  { ticker: '^GSPC', name: 'S&P 500 (VTSAX proxy)',  alloc: 0     },
+  { ticker: 'VTSAX', name: 'Vanguard Total Stock',    alloc: 81    },
+  { ticker: 'NOW',   name: 'ServiceNow',              alloc: 9     },
+  { ticker: 'FHAPX', name: '401K',                    alloc: 9     },
+  { ticker: 'CEG',   name: 'Constellation Energy',    alloc: 0.25  },
+  { ticker: 'MU',    name: 'Micron Technology',       alloc: 0.25  },
   { ticker: 'POWL',  name: 'Powell Industries',       alloc: 0.125 },
   { ticker: 'GRID',  name: 'First Trust Grid ETF',    alloc: 0.125 },
   { ticker: 'VOLT',  name: '',                        alloc: 0.083 },
@@ -358,203 +193,185 @@ const DEFAULT_HOLDINGS = [
   { ticker: 'DTCR',  name: '',                        alloc: 0.083 },
 ];
 
-// ── State ──
-let holdings = loadHoldings();
-let priceData = {}; // ticker -> { price, change, changePct }
-let refreshTimer = null;
-const REFRESH_INTERVAL_LIVE   = 1 * 60 * 1000;  // 1 min during market hours
-const REFRESH_INTERVAL_CLOSED = 5 * 60 * 1000;  // 5 min after hours
-let marketState = 'CLOSED';
+const COST_BASIS = {
+  'NOW':  101,
+  'CEG':  305.68,
+  'MU':   504.1,
+  'POWL': 255,
+  'GRID': 185.2,
+  'VOLT': 38.5,
+  'URA':  54.46,
+};
 
-const HOLDINGS_VERSION = '3';
+const HOLDINGS_VERSION  = '4';
+const REFRESH_LIVE      = 60 * 1000;
+const REFRESH_CLOSED    = 5 * 60 * 1000;
+
+let holdings    = loadHoldings();
+let priceData   = {};
+let refreshTimer = null;
+
 function loadHoldings() {
   try {
-    const ver = localStorage.getItem('pt_holdings_ver');
+    const ver   = localStorage.getItem('pt_v');
     const saved = localStorage.getItem('pt_holdings');
     if (saved && ver === HOLDINGS_VERSION) return JSON.parse(saved);
-    // Version mismatch — reset to new defaults
-    localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
+    localStorage.setItem('pt_v', HOLDINGS_VERSION);
     return DEFAULT_HOLDINGS;
   } catch { return DEFAULT_HOLDINGS; }
 }
 function saveHoldings() {
   localStorage.setItem('pt_holdings', JSON.stringify(holdings));
-  localStorage.setItem('pt_holdings_ver', HOLDINGS_VERSION);
+  localStorage.setItem('pt_v', HOLDINGS_VERSION);
 }
 
-// ── Fetch prices via Yahoo Finance (no API key needed) ──
 async function fetchPrice(ticker) {
-  // Use 1y range to get both proper previousClose (daily) and first-of-year price (YTD)
-  const yahooUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y&includePrePost=false`;
-  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
+  const enc  = encodeURIComponent(ticker);
+  const url1 = `https://query1.finance.yahoo.com/v8/finance/chart/${enc}?interval=1d&range=1y&includePrePost=false`;
+  const url2 = `https://query2.finance.yahoo.com/v8/finance/chart/${enc}?interval=1d&range=1y&includePrePost=false`;
 
   const attempts = [
-    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`),
-    () => fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl2)}`),
-    () => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`).then(async r => {
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(url1)}`),
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(url2)}`),
+    () => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url1)}`).then(async r => {
       const j = await r.json();
-      return new Response(j.contents, { headers: { 'Content-Type': 'application/json' } });
+      return new Response(j.contents, {headers:{'Content-Type':'application/json'}});
     }),
-    () => fetch(`https://thingproxy.freeboard.io/fetch/${yahooUrl}`),
+    () => fetch(`https://thingproxy.freeboard.io/fetch/${url1}`),
   ];
 
   for (const attempt of attempts) {
     try {
       const res = await Promise.race([
         attempt(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+        new Promise((_,rej) => setTimeout(() => rej('timeout'), 7000))
       ]);
       if (!res.ok) continue;
-      const data = await res.json();
+      const data   = await res.json();
       const result = data?.chart?.result?.[0];
       if (!result) continue;
-      const meta = result.meta;
-      const price = meta.regularMarketPrice;
+
+      const meta       = result.meta;
+      const price      = meta.regularMarketPrice;
       if (!price) continue;
 
       const timestamps = result.timestamp || [];
       const closes     = result.indicators?.quote?.[0]?.close || [];
 
-      // Daily: use second-to-last close in array (avoids meta.previousClose issues with indices)
-      const validCloses = [];
-      for (let i = 0; i < closes.length; i++) {
-        if (closes[i] != null) validCloses.push(closes[i]);
-      }
-      const prevClose = validCloses.length >= 2
+      // Daily % — second-to-last valid close
+      const validCloses = closes.filter(v => v != null);
+      const prevClose   = validCloses.length >= 2
         ? validCloses[validCloses.length - 2]
-        : (meta.previousClose || meta.chartPreviousClose || meta.regularMarketPreviousClose);
+        : (meta.previousClose || meta.chartPreviousClose);
       if (!prevClose) continue;
-      const change = price - prevClose;
-      const changePct = (change / prevClose) * 100;
+      const changePct = ((price - prevClose) / prevClose) * 100;
 
-      // YTD: find first close on/after Jan 1 of current year
+      // YTD % — first close on/after Jan 1
       let ytdPct = null;
-      try {
-        const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
-        let firstClose  = null;
-        for (let i = 0; i < timestamps.length; i++) {
-          if (timestamps[i] >= yearStart && closes[i] != null) {
-            firstClose = closes[i];
-            break;
-          }
+      const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
+      for (let i = 0; i < timestamps.length; i++) {
+        if (timestamps[i] >= yearStart && closes[i] != null) {
+          ytdPct = ((price - closes[i]) / closes[i]) * 100;
+          break;
         }
-        if (firstClose && firstClose > 0) {
-          ytdPct = ((price - firstClose) / firstClose) * 100;
-        }
-      } catch(e) {}
+      }
 
-      // Use live price during market hours, official close after hours
-      const state = meta.marketState || 'CLOSED'; // REGULAR, PRE, POST, CLOSED
-      const isLive = state === 'REGULAR';
-      const displayPrice = isLive
-        ? (meta.regularMarketPrice || price)
-        : (meta.regularMarketPrice || price);
-
-      return { price: displayPrice, change, changePct, ytdPct, marketState: state, isLive, ok: true };
-    } catch (e) { continue; }
+      const isLive = (meta.marketState || '') === 'REGULAR';
+      return { price, changePct, ytdPct, isLive, ok: true };
+    } catch(e) { continue; }
   }
-  return { price: null, change: null, changePct: null, ytdPct: null, ok: false };
+  return { price: null, changePct: null, ytdPct: null, isLive: false, ok: false };
 }
 
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
 
-  // Fetch all in parallel
   const results = await Promise.all(
-    holdings.map(h => fetchPrice(h.ticker).then(d => ({ ticker: h.ticker, ...d })))
+    holdings.map(h => fetchPrice(h.ticker).then(d => ({ticker: h.ticker, ...d})))
   );
-
   results.forEach(r => { priceData[r.ticker] = r; });
 
   renderStocks();
   renderHeader();
 
-  const now = new Date();
-  const anyLive2 = Object.values(priceData).some(d => d.isLive);
-  const statusLabel = anyLive2 ? '● LIVE' : '○ CLOSED';
-  document.getElementById('lastUpdated').textContent =
-    `${statusLabel} · Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  document.getElementById('lastUpdated').style.color = anyLive2 ? 'var(--up)' : 'var(--muted)';
+  const anyLive  = Object.values(priceData).some(d => d.isLive);
+  const now      = new Date();
+  const statusEl = document.getElementById('lastUpdated');
+  statusEl.textContent = `${anyLive ? '● LIVE' : '○ CLOSED'} · Updated ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+  statusEl.style.color = anyLive ? 'var(--up)' : 'var(--muted)';
 
   btn.classList.remove('spinning');
-
-  // Adapt refresh rate: faster during market hours
-  const anyLive = Object.values(priceData).some(d => d.isLive);
-  marketState = anyLive ? 'OPEN' : 'CLOSED';
-  const interval = anyLive ? REFRESH_INTERVAL_LIVE : REFRESH_INTERVAL_CLOSED;
   clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshAll, interval);
+  refreshTimer = setTimeout(refreshAll, anyLive ? REFRESH_LIVE : REFRESH_CLOSED);
 }
 
-// ── Render ──
 function renderStocks() {
-  const list = document.getElementById('stocksList');
+  document.getElementById('stocksList').innerHTML = holdings.map((h, i) => {
+    const d       = priceData[h.ticker];
+    const hasData = d && d.ok && d.price != null;
+    const failed  = d && !d.ok;
 
-  // Sort by allocation % descending
-  const sorted = [...holdings].sort((a, b) => b.alloc - a.alloc);
+    const pct    = hasData ? d.changePct : null;
+    const dir    = pct == null ? 'flat' : pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+    const sign   = pct != null && pct > 0 ? '+' : '';
 
-  list.innerHTML = sorted.map((h, i) => {
-    const d = priceData[h.ticker];
-    const hasData = d && d.ok && d.price !== null;
-
-    const pct = hasData ? d.changePct : null;
-    const dir = pct === null ? 'flat' : pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
-    const sign = pct !== null && pct > 0 ? '+' : '';
-
-    const priceStr  = hasData ? `$${d.price.toFixed(2)}` : '—';
+    const priceStr  = hasData ? `$${d.price.toFixed(2)}` : failed ? 'ERR' : '—';
     const changeStr = hasData ? `${sign}${pct.toFixed(2)}%` : '—';
+
+    // YTD: cost basis override takes priority
+    let ytdPct = hasData ? d.ytdPct : null;
+    if (hasData && COST_BASIS[h.ticker] != null) {
+      ytdPct = ((d.price - COST_BASIS[h.ticker]) / COST_BASIS[h.ticker]) * 100;
+    }
+    const ytdDir  = ytdPct != null ? (ytdPct >= 0 ? 'up' : 'down') : 'flat';
+    const ytdSign = ytdPct != null && ytdPct >= 0 ? '+' : '';
+    const ytdStr  = ytdPct != null ? `${ytdSign}${ytdPct.toFixed(2)}% YTD` : '— YTD';
+
+    const liveDot = hasData && d.isLive
+      ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--up);margin-right:5px;vertical-align:middle;"></span>`
+      : '';
 
     const barWidth = Math.min(h.alloc, 100);
 
-    return `
-      <div class="stock-card ${dir}">
-        <div class="stock-rank">${String(i + 1).padStart(2, '0')}</div>
-        <div class="stock-ticker">${h.ticker}</div>
-        <div class="stock-right">
-          <div class="stock-price ${hasData ? '' : 'shimmer'}">${priceStr}</div>
-          <div class="stock-change ${dir} ${hasData ? '' : 'shimmer'}">${changeStr}</div>
-        </div>
-        <div class="stock-name">${h.name || ''}</div>
-        <div class="alloc-bar-wrap">
-          <div class="alloc-bar-bg">
-            <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
-          </div>
-          <div class="alloc-pct">${h.alloc}%</div>
-        </div>
-      </div>
-    `;
+    return `<div class="stock-card ${dir}">
+  <div class="stock-rank">${String(i+1).padStart(2,'0')}</div>
+  <div class="stock-ticker">${h.ticker.replace('^','')}</div>
+  <div class="stock-right">
+    <div class="stock-price ${hasData?'':'shimmer'}">${liveDot}${priceStr}</div>
+    <div class="stock-change ${dir} ${hasData?'':'shimmer'}">${changeStr}</div>
+  </div>
+  <div class="stock-name">${h.name||''}</div>
+  <div class="stock-ytd ${ytdDir}">${ytdStr}</div>
+  <div class="alloc-bar-wrap">
+    <div class="alloc-bar-bg" style="${h.alloc===0?'opacity:0.2':''}">
+      <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
+    </div>
+    <div class="alloc-pct">${h.alloc>0?h.alloc+'%':'—'}</div>
+  </div>
+</div>`;
   }).join('');
 }
 
 function renderHeader() {
-  // Weighted daily change
-  let weightedChange = 0;
-  let allLoaded = true;
+  const hasAllocs = holdings.some(h => h.alloc > 0);
+  let w = 0;
   holdings.forEach(h => {
     const d = priceData[h.ticker];
-    if (d && d.ok && d.changePct !== null) {
-      weightedChange += (h.alloc / 100) * d.changePct;
-    } else {
-      allLoaded = false;
-    }
+    if (d && d.ok && d.changePct != null) w += (h.alloc/100) * d.changePct;
   });
-
-  const totalEl  = document.getElementById('totalValue');
-  const changeEl = document.getElementById('totalChange');
-
-  totalEl.textContent = 'My Portfolio';
-
-  if (allLoaded || Object.keys(priceData).length > 0) {
-    const sign = weightedChange >= 0 ? '+' : '';
-    const dir  = weightedChange >= 0 ? 'up' : 'down';
-    changeEl.style.color = dir === 'up' ? 'var(--up)' : 'var(--down)';
-    changeEl.textContent = `${sign}${weightedChange.toFixed(2)}% today (weighted)`;
+  document.getElementById('totalValue').textContent = 'My Portfolio';
+  const el = document.getElementById('totalChange');
+  if (hasAllocs && Object.keys(priceData).length > 0) {
+    el.style.color   = w >= 0 ? 'var(--up)' : 'var(--down)';
+    el.textContent   = `${w>=0?'+':''}${w.toFixed(2)}% today (weighted)`;
+  } else {
+    el.style.color   = 'var(--dim)';
+    el.textContent   = 'Set allocations to see weighted change';
   }
 }
 
-// ── Edit Panel ──
-function openPanel() {
+function openPanel()  {
   renderHoldingsTable();
   document.getElementById('panel').classList.add('open');
   document.getElementById('backdrop').classList.add('open');
@@ -563,70 +380,39 @@ function closePanel() {
   document.getElementById('panel').classList.remove('open');
   document.getElementById('backdrop').classList.remove('open');
 }
-
 function renderHoldingsTable() {
-  const tbody = document.getElementById('holdingsBody');
-  tbody.innerHTML = holdings.map((h, i) => `
-    <tr data-i="${i}">
-      <td><input class="ticker-input" value="${h.ticker}" placeholder="TICKER"
-          oninput="holdings[${i}].ticker = this.value.toUpperCase().trim()" /></td>
-      <td><input value="${h.name || ''}" placeholder="Name"
-          oninput="holdings[${i}].name = this.value" /></td>
-      <td><input class="alloc-input" type="number" min="0" max="100" step="0.5"
-          value="${h.alloc}" oninput="holdings[${i}].alloc = parseFloat(this.value)||0; updateAllocTotal()" /></td>
+  document.getElementById('holdingsBody').innerHTML = holdings.map((h,i) => `
+    <tr>
+      <td><input class="ticker-input" value="${h.ticker}" placeholder="TICKER" oninput="holdings[${i}].ticker=this.value.toUpperCase().trim()"/></td>
+      <td><input value="${h.name||''}" placeholder="Name" oninput="holdings[${i}].name=this.value"/></td>
+      <td><input class="alloc-input" type="number" min="0" max="100" step="0.5" value="${h.alloc}" oninput="holdings[${i}].alloc=parseFloat(this.value)||0;updateAllocTotal()"/></td>
       <td><button class="btn-del" onclick="deleteRow(${i})">×</button></td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
   updateAllocTotal();
 }
-
 function updateAllocTotal() {
-  const total = holdings.reduce((s, h) => s + (parseFloat(h.alloc) || 0), 0);
-  const el = document.getElementById('allocTotal');
-  const cls = Math.abs(total - 100) < 0.01 ? 'exact' : total > 100 ? 'over' : '';
-  el.innerHTML = `Total: <span class="${cls}">${total.toFixed(1)}%</span>`;
+  const t   = holdings.reduce((s,h)=>s+(parseFloat(h.alloc)||0),0);
+  const cls = Math.abs(t-100)<0.01?'exact':t>100?'over':'';
+  document.getElementById('allocTotal').innerHTML=`Total: <span class="${cls}">${t.toFixed(1)}%</span>`;
 }
-
 function addRow() {
-  holdings.push({ ticker: '', name: '', alloc: 0 });
+  holdings.push({ticker:'',name:'',alloc:0});
   renderHoldingsTable();
-  // Focus new row
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('.ticker-input');
-    inputs[inputs.length - 1]?.focus();
-  }, 50);
+  setTimeout(()=>{ const ins=document.querySelectorAll('.ticker-input'); ins[ins.length-1]?.focus(); },50);
 }
-
-function deleteRow(i) {
-  holdings.splice(i, 1);
-  renderHoldingsTable();
-}
-
+function deleteRow(i) { holdings.splice(i,1); renderHoldingsTable(); }
 function saveAndClose() {
-  // Validate
-  const tickers = holdings.map(h => h.ticker.trim()).filter(Boolean);
-  if (tickers.length === 0) { showToast('Add at least one ticker'); return; }
-  const total = holdings.reduce((s, h) => s + (parseFloat(h.alloc) || 0), 0);
-  if (total > 100.1) { showToast(`Allocations total ${total.toFixed(1)}% — must be ≤ 100%`); return; }
-
-  // Clean up empty rows
-  holdings = holdings.filter(h => h.ticker.trim());
-  saveHoldings();
-  closePanel();
-  priceData = {};
-  renderStocks();
-  refreshAll();
+  if (!holdings.filter(h=>h.ticker.trim()).length) { showToast('Add at least one ticker'); return; }
+  const t = holdings.reduce((s,h)=>s+(parseFloat(h.alloc)||0),0);
+  if (t > 100.1) { showToast(`Total ${t.toFixed(1)}% — must be ≤ 100%`); return; }
+  holdings = holdings.filter(h=>h.ticker.trim());
+  saveHoldings(); closePanel(); priceData={}; renderStocks(); refreshAll();
 }
-
-// ── Toast ──
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// ── Init ──
 renderStocks();
 refreshAll();
 </script>
