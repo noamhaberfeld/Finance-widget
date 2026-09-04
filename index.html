@@ -238,10 +238,7 @@ async function fetchPrice(ticker) {
   const attempts = [
     () => fetch(`https://corsproxy.io/?${encodeURIComponent(url1)}`),
     () => fetch(`https://corsproxy.io/?${encodeURIComponent(url2)}`),
-    () => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url1)}`).then(async r => {
-      const j = await r.json();
-      return new Response(j.contents, {headers:{'Content-Type':'application/json'}});
-    }),
+    () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url1)}`),
     () => fetch(`https://thingproxy.freeboard.io/fetch/${url1}`),
   ];
 
@@ -249,7 +246,7 @@ async function fetchPrice(ticker) {
     try {
       const res = await Promise.race([
         attempt(),
-        new Promise((_,rej) => setTimeout(() => rej('timeout'), 7000))
+        new Promise((_,rej) => setTimeout(() => rej('timeout'), 3000))
       ]);
       if (!res.ok) continue;
       const data = await res.json();
@@ -270,7 +267,6 @@ async function fetchPrice(ticker) {
 
       const changePct = ((price - prevClose) / prevClose) * 100;
 
-      // YTD from Jan 1
       let ytdPct = null;
       const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
       for (let i = 0; i < timestamps.length; i++) {
@@ -286,7 +282,6 @@ async function fetchPrice(ticker) {
   }
   return { price: null, changePct: null, ytdPct: null, isLive: false, ok: false };
 }
-
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
