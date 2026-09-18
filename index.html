@@ -1,656 +1,361 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0f1e">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Portfolio">
-<title>Portfolio Tracker</title>
-<script>
-const _m={name:"Portfolio Tracker",short_name:"Portfolio",display:"standalone",background_color:"#0a0f1e",theme_color:"#0a0f1e",start_url:"./",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%230a0f1e'/><polyline points='24,140 72,88 104,112 168,52' fill='none' stroke='%2300d4a0' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/></svg>",sizes:"192x192",type:"image/svg+xml"}]};
-const _b=new Blob([JSON.stringify(_m)],{type:'application/manifest+json'});
-const _l=document.createElement('link');_l.rel='manifest';_l.href=URL.createObjectURL(_b);
-document.currentScript.after(_l);
-</script><link rel="manifest" href="blob:null/255e6055-7393-4440-aabb-c9df7c733f37">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Syne:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0a0f1e;--surface:#0f1729;--border:#1e2a45;--muted:#3a4a6b;--text:#e8edf8;--dim:#7a8aab;--up:#00d4a0;--down:#ff4d6d;--accent:#4d9fff}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100dvh;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-.app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px}
-header{padding:52px 0 20px;display:flex;align-items:flex-end;justify-content:space-between}
-.header-left h1{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-.portfolio-value{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-top:4px}
-.portfolio-change{font-size:13px;margin-top:3px}
-.header-right{display:flex;gap:10px;align-items:center}
-.btn-icon{width:38px;height:38px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);transition:all .15s}
-.btn-icon:active{transform:scale(.93);background:var(--border)}
-.btn-icon.spinning svg{animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.last-updated{font-size:10px;letter-spacing:.08em;text-align:right;margin-bottom:18px;color:var(--muted)}
-.section-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
-.stocks-list{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.stock-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto auto auto;gap:0 12px;cursor:default;transition:transform .15s;position:relative;overflow:hidden}
-.stock-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:14px 0 0 14px}
-.stock-card.up::before{background:var(--up)}
-.stock-card.down::before{background:var(--down)}
-.stock-card.flat::before{background:var(--muted)}
-.stock-card:active{transform:scale(.985)}
-.stock-rank{grid-column:1;grid-row:1/5;align-self:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--border);width:28px;text-align:center;letter-spacing:-.03em}
-.stock-ticker{grid-column:2;grid-row:1;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);letter-spacing:.04em;text-align:right;padding-bottom:3px}
-.stock-name{grid-column:2;grid-row:2;font-size:10px;color:var(--dim);letter-spacing:.06em;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 0}
-.stock-ytd{grid-column:2;grid-row:3;font-size:10px;text-align:right;padding:2px 0 6px;letter-spacing:.04em}
-.stock-ytd.up{color:var(--up);opacity:.9}
-.stock-ytd.down{color:var(--down);opacity:.9}
-.stock-ytd.flat{color:var(--muted)}
-.stock-right{grid-column:3;grid-row:1/4;align-self:center;text-align:right}
-.stock-price{font-size:15px;font-weight:500;color:var(--text)}
-.stock-change{font-size:12px;font-weight:500;margin-top:3px}
-.stock-change.up{color:var(--up)}
-.stock-change.down{color:var(--down)}
-.stock-change.flat{color:var(--muted)}
-.alloc-bar-wrap{grid-column:2/4;grid-row:4;display:flex;align-items:center;gap:8px}
-.alloc-bar-bg{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.alloc-bar-fill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
-.alloc-bar-fill.up{background:var(--up)}
-.alloc-bar-fill.down{background:var(--down)}
-.alloc-bar-fill.flat{background:var(--muted)}
-.alloc-pct{font-size:10px;color:var(--dim);min-width:34px;text-align:right}
-.shimmer{background:linear-gradient(90deg,var(--border) 25%,var(--muted) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;color:transparent;user-select:none}
-@keyframes shimmer{to{background-position:-200% 0}}
-.panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s}
-.panel-backdrop.open{opacity:1;pointer-events:all}
-.panel{position:fixed;bottom:0;left:0;right:0;background:#111827;border-top:1px solid var(--border);border-radius:22px 22px 0 0;padding:20px 20px calc(28px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);max-height:88dvh;overflow-y:auto}
-.panel.open{transform:translateY(0)}
-.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
-.panel-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:18px}
-.holdings-table{width:100%;border-collapse:collapse;margin-bottom:16px}
-.holdings-table th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 6px 10px;font-weight:400}
-.holdings-table td{padding:8px 6px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle}
-.holdings-table td input{background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:100%;padding:2px 0}
-.holdings-table td input.ticker-input{text-transform:uppercase;width:70px}
-.holdings-table td input.alloc-input{width:60px;text-align:right}
-.holdings-table td input:focus{border-bottom:1px solid var(--accent)}
-.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;line-height:1}
-.btn-del:active{color:var(--down)}
-.alloc-total{font-size:11px;text-align:right;color:var(--dim);margin-bottom:16px}
-.alloc-total span{font-weight:500}
-.alloc-total span.over{color:var(--down)}
-.alloc-total span.exact{color:var(--up)}
-.panel-actions{display:flex;gap:10px}
-.btn-add{flex:1;padding:13px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--dim);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer}
-.btn-add:active{border-color:var(--accent);color:var(--accent)}
-.btn-save{flex:1;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
-.btn-save:active{transform:scale(.97);opacity:.9}
-.error-banner{background:#ff4d6d18;border:1px solid #ff4d6d44;border-radius:10px;padding:10px 14px;font-size:11px;color:var(--down);margin-bottom:14px;line-height:1.5}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2a45;color:var(--text);border:1px solid var(--border);padding:10px 18px;border-radius:10px;font-size:12px;z-index:200;white-space:nowrap;transition:transform .3s}
-.toast.show{transform:translateX(-50%) translateY(0)}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-</style>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --card-bg: #131b2e;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --border: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding-bottom: 80px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+
+    .btn:hover { border-color: var(--accent); }
+
+    #error-banner {
+      display: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--red);
+      color: var(--red);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ticker-symbol {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .ticker-name {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .price-val {
+      font-size: 1rem;
+      text-align: right;
+    }
+
+    .price-change {
+      font-size: 0.75rem;
+      text-align: right;
+    }
+
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
+    .shimmer {
+      background: linear-gradient(90deg, var(--card-bg) 0%, #1c273e 50%, var(--card-bg) 100%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Bottom Sheet Edit Panel */
+    #edit-panel {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border-top: 2px solid var(--accent);
+      padding: 20px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transition: bottom 0.3s ease;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+
+    #edit-panel.active { bottom: 0; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 8px; text-align: left; font-size: 0.8rem; }
+    input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 6px;
+      width: 100%;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
+
   <header>
-    <div class="header-left">
-      <h1>Portfolio</h1>
-      <div class="portfolio-value" id="totalValue">My Portfolio</div>
-      <div class="portfolio-change" id="totalChange" style="color: var(--up);">+0.00% today (weighted)</div>
-    </div>
-    <div class="header-right">
-      <button class="btn-icon" id="refreshBtn" onclick="refreshAll()" title="Refresh prices">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-      </button>
-      <button class="btn-icon" onclick="openPanel()" title="Edit holdings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-      </button>
+    <h1>Portfolio</h1>
+    <div>
+      <button class="btn" onclick="fetchPrices()">↻ Refresh</button>
+      <button class="btn" onclick="toggleEdit()">Edit</button>
     </div>
   </header>
-  <div class="last-updated" id="lastUpdated" style="color: var(--muted);">○ CLOSED · 07:04 PM</div>
-  <div id="errorBanner">
-      <div class="error-banner">
-        ⚠ Could not reach Yahoo Finance. This can happen if your browser blocks third-party requests or you're offline.
-        Try opening in a different browser, or disable any strict tracker-blocking extensions.
-      </div></div>
-  <div class="section-label">Holdings — sorted by weight</div>
-  <div class="stocks-list" id="stocksList"><div class="stock-card flat">
-<div class="stock-rank">01</div>
-<div class="stock-ticker">GSPC</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">S&amp;P 500 (ref)</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="opacity:.2">
-    <div class="alloc-bar-fill flat" style="width:0%"></div>
-  </div>
-  <div class="alloc-pct">—</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">02</div>
-<div class="stock-ticker">VTSAX</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">Vanguard Total Stock</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:81%"></div>
-  </div>
-  <div class="alloc-pct">81%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">03</div>
-<div class="stock-ticker">NOW</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">ServiceNow</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:9%"></div>
-  </div>
-  <div class="alloc-pct">9%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">04</div>
-<div class="stock-ticker">FHAPX</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">401K</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:9%"></div>
-  </div>
-  <div class="alloc-pct">9%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">05</div>
-<div class="stock-ticker">CEG</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">Constellation Energy</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.25%"></div>
-  </div>
-  <div class="alloc-pct">0.25%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">06</div>
-<div class="stock-ticker">MU</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">Micron Technology</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.25%"></div>
-  </div>
-  <div class="alloc-pct">0.25%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">07</div>
-<div class="stock-ticker">POWL</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">Powell Industries</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.125%"></div>
-  </div>
-  <div class="alloc-pct">0.125%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">08</div>
-<div class="stock-ticker">GRID</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">First Trust Grid ETF</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.125%"></div>
-  </div>
-  <div class="alloc-pct">0.125%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">09</div>
-<div class="stock-ticker">VOLT</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name"></div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.083%"></div>
-  </div>
-  <div class="alloc-pct">0.083%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">10</div>
-<div class="stock-ticker">URA</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name">Uranium ETF</div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.083%"></div>
-  </div>
-  <div class="alloc-pct">0.083%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">11</div>
-<div class="stock-ticker">DRAM</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name"></div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.083%"></div>
-  </div>
-  <div class="alloc-pct">0.083%</div>
-</div>
-</div><div class="stock-card flat">
-<div class="stock-rank">12</div>
-<div class="stock-ticker">DTCR</div>
-<div class="stock-right">
-  <div class="stock-price ">ERR</div>
-  <div class="stock-change flat ">—</div>
-</div>
-<div class="stock-name"></div>
-<div class="stock-ytd flat">— YTD</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="">
-    <div class="alloc-bar-fill flat" style="width:0.083%"></div>
-  </div>
-  <div class="alloc-pct">0.083%</div>
-</div>
-</div></div>
-</div>
 
-<div class="panel-backdrop" id="backdrop" onclick="closePanel()"></div>
-<div class="panel" id="panel">
-  <div class="panel-handle"></div>
-  <div class="panel-title">Edit Portfolio <span style="font-size:11px;color:var(--dim);font-weight:400;font-family:'DM Mono',monospace">— order = display order</span></div>
-  <table class="holdings-table">
-    <thead><tr><th>Ticker</th><th>Name (optional)</th><th style="text-align:right">% Alloc</th><th></th></tr></thead>
-    <tbody id="holdingsBody"></tbody>
-  </table>
-  <div class="alloc-total" id="allocTotal">Total: <span>0%</span></div>
-  <div class="panel-actions">
-    <button class="btn-add" onclick="addRow()">+ Add ticker</button>
-    <button class="btn-save" onclick="saveAndClose()">Save &amp; Refresh</button>
+  <div id="error-banner">Failed to fetch prices from primary sources. Retrying with fallback...</div>
+
+  <main id="holdings-list"></main>
+
+  <div id="edit-panel">
+    <div style="display:flex; justify-size:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-family:'Syne';">Edit Holdings</h3>
+      <button class="btn" onclick="toggleEdit()">Done</button>
+    </div>
+    <table id="edit-table">
+      <thead>
+        <tr><th>Ticker</th><th>Name</th><th>Alloc %</th></tr>
+      </thead>
+      <tbody id="edit-tbody"></tbody>
+    </table>
+    <button class="btn" style="margin-top:12px; width:100%;" onclick="saveHoldings()">Save & Reload</button>
   </div>
-</div>
-<div class="toast" id="toast"></div>
 
-<script>
-const DEFAULT_HOLDINGS = [
-  { ticker: '^GSPC', name: 'S&P 500 (ref)',         alloc: 0     },
-  { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81    },
-  { ticker: 'NOW',   name: 'ServiceNow',             alloc: 9     },
-  { ticker: 'FHAPX', name: '401K',                   alloc: 9     },
-  { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0.25  },
-  { ticker: 'MU',    name: 'Micron Technology',      alloc: 0.25  },
-  { ticker: 'POWL',  name: 'Powell Industries',      alloc: 0.125 },
-  { ticker: 'GRID',  name: 'First Trust Grid ETF',   alloc: 0.125 },
-  { ticker: 'VOLT',  name: '',                       alloc: 0.083 },
-  { ticker: 'URA',   name: 'Uranium ETF',            alloc: 0.083 },
-  { ticker: 'DRAM',  name: '',                       alloc: 0.083 },
-  { ticker: 'DTCR',  name: '',                       alloc: 0.083 },
-];
+  <script>
+    const DEFAULT_HOLDINGS = [
+      { ticker: '^GSPC', name: 'S&P 500 (ref)',         alloc: 0     },
+      { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81    },
+      { ticker: 'NOW',   name: 'ServiceNow',             alloc: 9     },
+      { ticker: 'FHAPX', name: '401K',                   alloc: 9     },
+      { ticker: 'CEG',   name: 'Constellation Energy',   alloc: 0.25  },
+      { ticker: 'MU',    name: 'Micron Technology',      alloc: 0.25  },
+      { ticker: 'POWL',  name: 'Powell Industries',      alloc: 0.125 },
+      { ticker: 'GRID',  name: 'First Trust Grid ETF',   alloc: 0.125 },
+      { ticker: 'VOLT',  name: '',                       alloc: 0.083 },
+      { ticker: 'URA',   name: 'Uranium ETF',            alloc: 0.083 },
+      { ticker: 'DRAM',  name: '',                       alloc: 0.083 },
+      { ticker: 'DTCR',  name: '',                       alloc: 0.083 },
+    ];
 
-const COST_BASIS = {
-  'NOW':  101,
-  'CEG':  305.68,
-  'MU':   504.1,
-  'POWL': 255,
-  'GRID': 185.2,
-  'VOLT': 38.5,
-  'URA':  54.46,
-};
+    const COST_BASIS = {
+      'NOW': 101, 'CEG': 305.68, 'MU': 504.1,
+      'POWL': 255, 'GRID': 185.2, 'VOLT': 38.5, 'URA': 54.46,
+    };
+    const AUTO_BASIS_TICKERS = ['DRAM'];
+    const HOLDINGS_VERSION = '5';
 
-const AUTO_BASIS_TICKERS = ['DRAM'];
-const HOLDINGS_VERSION = '5';
-const REFRESH_LIVE   = 60  * 1000;
-const REFRESH_CLOSED = 5   * 60 * 1000;
-const FETCH_TIMEOUT  = 8000;
+    // State Initialization
+    let holdings = JSON.parse(localStorage.getItem('pt_holdings')) || DEFAULT_HOLDINGS;
+    if (localStorage.getItem('pt_v') !== HOLDINGS_VERSION) {
+      holdings = DEFAULT_HOLDINGS;
+      localStorage.setItem('pt_holdings', JSON.stringify(DEFAULT_HOLDINGS));
+      localStorage.setItem('pt_v', HOLDINGS_VERSION);
+    }
 
-let holdings  = loadHoldings();
-let priceData = {};
-let refreshTimer = null;
-let yahooCrumb   = null;
+    let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
-/* ── Storage ─────────────────────────────── */
-function loadHoldings() {
-  try {
-    const ver   = localStorage.getItem('pt_v');
-    const saved = localStorage.getItem('pt_holdings');
-    if (saved && ver === HOLDINGS_VERSION) return JSON.parse(saved);
-    localStorage.setItem('pt_v', HOLDINGS_VERSION);
-    return DEFAULT_HOLDINGS;
-  } catch { return DEFAULT_HOLDINGS; }
-}
-function saveHoldings() {
-  try {
-    localStorage.setItem('pt_holdings', JSON.stringify(holdings));
-    localStorage.setItem('pt_v', HOLDINGS_VERSION);
-  } catch {}
-}
-function getAutoBasis(ticker) {
-  try { const m = JSON.parse(localStorage.getItem('pt_auto_basis') || '{}'); return m[ticker] ?? null; }
-  catch { return null; }
-}
-function setAutoBasis(ticker, price) {
-  try { const m = JSON.parse(localStorage.getItem('pt_auto_basis') || '{}'); m[ticker] = price; localStorage.setItem('pt_auto_basis', JSON.stringify(m)); }
-  catch {}
-}
+    // Direct proxy fetch pipeline
+    async function fetchPrice(ticker) {
+      const cleanTicker = ticker.replace('^', '');
+      
+      // Target Endpoints: Yahoo Chart API via CORS proxies
+      const urls = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`)}`,
+        `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`)}`,
+        `https://stooq.com/q/l/?s=${cleanTicker}.us&f=sdlw2&e=json`
+      ];
 
-/* ── Toast ───────────────────────────────── */
-function showToast(msg, isErr) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = isErr ? '#ff4d6d22' : '#1e2a45';
-  t.style.borderColor = isErr ? '#ff4d6d66' : 'var(--border)';
-  t.style.color = isErr ? 'var(--down)' : 'var(--text)';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
+      for (const url of urls) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 6000);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeout);
 
-/* ── Yahoo Finance crumb ─────────────────── */
-async function fetchYahooCrumb() {
-  // Yahoo requires a crumb token since 2023. Fetch it once per session.
-  try {
-    const r = await Promise.race([
-      fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
-        credentials: 'include',
-        headers: { 'Accept': 'text/plain' }
-      }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), FETCH_TIMEOUT))
-    ]);
-    if (!r.ok) return null;
-    const crumb = await r.text();
-    return crumb && crumb.length > 0 ? crumb : null;
-  } catch { return null; }
-}
+          if (!res.ok) continue;
+          const data = await res.json();
 
-/* ── Price fetch with multi-strategy ─────── */
-async function fetchPrice(ticker) {
-  const enc = encodeURIComponent(ticker);
-
-  // Strategy 1: Direct Yahoo Finance with crumb (best, no proxy)
-  if (yahooCrumb) {
-    try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${enc}?interval=1d&range=5d&includePrePost=false&crumb=${encodeURIComponent(yahooCrumb)}`;
-      const r = await Promise.race([
-        fetch(url, { credentials: 'include' }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), FETCH_TIMEOUT))
-      ]);
-      if (r.ok) {
-        const result = await parseYahooChart(await r.json());
-        if (result) return result;
+          // Handle Yahoo Finance Chart Structure
+          if (data?.chart?.result?.[0]) {
+            const meta = data.chart.result[0].meta;
+            const price = meta.regularMarketPrice;
+            const prevClose = meta.chartPreviousClose || meta.previousClose;
+            return { price, prevClose };
+          }
+          
+          // Handle Stooq Data Structure
+          if (data?.symbols?.[0]?.close) {
+            const price = parseFloat(data.symbols[0].close);
+            return { price, prevClose: price };
+          }
+        } catch (e) {
+          continue;
+        }
       }
-    } catch {}
-  }
+      return null;
+    }
 
-  // Strategy 2: allorigins proxy (reliable, no rate limit issues)
-  const yfUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${enc}?interval=1d&range=5d&includePrePost=false`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yfUrl)}`,
-  ];
+    function renderLoading() {
+      const list = document.getElementById('holdings-list');
+      list.innerHTML = holdings.map(h => `
+        <div class="card shimmer">
+          <div>
+            <div class="ticker-symbol">${h.ticker}</div>
+            <div class="ticker-name">${h.name || h.ticker}</div>
+          </div>
+          <div>
+            <div class="price-val">--.--</div>
+          </div>
+        </div>
+      `).join('');
+    }
 
-  for (const proxy of proxies) {
-    try {
-      const r = await Promise.race([
-        fetch(proxy),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), FETCH_TIMEOUT))
-      ]);
-      if (!r.ok) continue;
-      const result = await parseYahooChart(await r.json());
-      if (result) return result;
-    } catch { continue; }
-  }
+    async function fetchPrices() {
+      renderLoading();
+      document.getElementById('error-banner').style.display = 'none';
 
-  return { price: null, changePct: null, ytdPct: null, isLive: false, ok: false };
-}
+      let failedCount = 0;
+      const results = await Promise.all(
+        holdings.map(async (h) => {
+          const data = await fetchPrice(h.ticker);
+          if (!data) failedCount++;
+          return { ...h, data };
+        })
+      );
 
-async function parseYahooChart(data) {
-  try {
-    const result = data?.chart?.result?.[0];
-    if (!result) return null;
-    const meta   = result.meta;
-    const price  = meta.regularMarketPrice;
-    if (!price) return null;
+      if (failedCount > 0) {
+        document.getElementById('error-banner').style.display = 'block';
+      }
 
-    const closes = result.indicators?.quote?.[0]?.close || [];
-    const timestamps = result.timestamp || [];
-    const validCloses = closes.filter(v => v != null);
+      render(results);
+    }
 
-    // prevClose: use second-to-last valid close (handles today's still-in-progress bar)
-    const prevClose = validCloses.length >= 2
-      ? validCloses[validCloses.length - 2]
-      : (meta.previousClose || meta.chartPreviousClose);
-    if (!prevClose) return null;
+    function render(data) {
+      const list = document.getElementById('holdings-list');
+      list.innerHTML = data.map(item => {
+        const price = item.data?.price;
+        let changeText = 'N/A';
+        let changeClass = '';
 
-    const changePct = ((price - prevClose) / prevClose) * 100;
+        if (price) {
+          // Auto Basis logic for specific tickers
+          if (AUTO_BASIS_TICKERS.includes(item.ticker) && !autoBasis[item.ticker]) {
+            autoBasis[item.ticker] = price;
+            localStorage.setItem('pt_auto_basis', JSON.stringify(autoBasis));
+          }
 
-    // YTD: first close at/after Jan 1 this year
-    let ytdPct = null;
-    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime() / 1000;
-    for (let i = 0; i < timestamps.length; i++) {
-      if (timestamps[i] >= yearStart && closes[i] != null) {
-        ytdPct = ((price - closes[i]) / closes[i]) * 100;
-        break;
+          const basis = COST_BASIS[item.ticker] || autoBasis[item.ticker];
+          
+          if (basis) {
+            const pct = ((price - basis) / basis) * 100;
+            changeClass = pct >= 0 ? 'pos' : 'neg';
+            changeText = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% (vs basis)`;
+          } else if (item.data.prevClose) {
+            const pct = ((price - item.data.prevClose) / item.data.prevClose) * 100;
+            changeClass = pct >= 0 ? 'pos' : 'neg';
+            changeText = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% (1d)`;
+          }
+        }
+
+        return `
+          <div class="card">
+            <div>
+              <div class="ticker-symbol">${item.ticker}</div>
+              <div class="ticker-name">${item.name || item.ticker}</div>
+            </div>
+            <div>
+              <div class="price-val">${price ? '$' + price.toFixed(2) : 'Unavailable'}</div>
+              <div class="price-change ${changeClass}">${changeText}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleEdit() {
+      const panel = document.getElementById('edit-panel');
+      panel.classList.toggle('active');
+      if (panel.classList.contains('active')) {
+        const tbody = document.getElementById('edit-tbody');
+        tbody.innerHTML = holdings.map((h, i) => `
+          <tr>
+            <td><input value="${h.ticker}" id="t_${i}"></td>
+            <td><input value="${h.name}" id="n_${i}"></td>
+            <td><input type="number" step="0.01" value="${h.alloc}" id="a_${i}"></td>
+          </tr>
+        `).join('');
       }
     }
 
-    const isLive = (meta.marketState || '') === 'REGULAR';
-    return { price, changePct, ytdPct, isLive, ok: true };
-  } catch { return null; }
-}
-
-/* ── Main refresh ────────────────────────── */
-async function refreshAll() {
-  const btn = document.getElementById('refreshBtn');
-  btn.classList.add('spinning');
-  document.getElementById('errorBanner').innerHTML = '';
-
-  // Render shimmer while loading
-  renderStocks(true);
-
-  // Get crumb once (if we don't already have one)
-  if (!yahooCrumb) {
-    yahooCrumb = await fetchYahooCrumb();
-  }
-
-  // Fetch all tickers in parallel
-  const results = await Promise.all(
-    holdings.map(h => fetchPrice(h.ticker).then(d => ({ ticker: h.ticker, ...d })))
-  );
-
-  let failCount = 0;
-  results.forEach(r => {
-    priceData[r.ticker] = r;
-    if (!r.ok) failCount++;
-    if (AUTO_BASIS_TICKERS.includes(r.ticker) && r.ok && r.price != null) {
-      if (getAutoBasis(r.ticker) === null) setAutoBasis(r.ticker, r.price);
-    }
-  });
-
-  if (failCount > 0 && failCount === holdings.length) {
-    // Total failure — likely a CORS/network issue
-    document.getElementById('errorBanner').innerHTML = `
-      <div class="error-banner">
-        ⚠ Could not reach Yahoo Finance. This can happen if your browser blocks third-party requests or you're offline.
-        Try opening in a different browser, or disable any strict tracker-blocking extensions.
-      </div>`;
-  } else if (failCount > 0) {
-    showToast(`${failCount} ticker${failCount > 1 ? 's' : ''} failed to load`, true);
-  }
-
-  renderStocks();
-  renderHeader();
-
-  const anyLive = Object.values(priceData).some(d => d.isLive);
-  const now = new Date();
-  const statusEl = document.getElementById('lastUpdated');
-  statusEl.textContent = `${anyLive ? '● LIVE' : '○ CLOSED'} · ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  statusEl.style.color = anyLive ? 'var(--up)' : 'var(--muted)';
-
-  btn.classList.remove('spinning');
-  clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshAll, anyLive ? REFRESH_LIVE : REFRESH_CLOSED);
-}
-
-/* ── Render ──────────────────────────────── */
-function renderStocks(shimmer = false) {
-  document.getElementById('stocksList').innerHTML = holdings.map((h, i) => {
-    const d       = priceData[h.ticker];
-    const hasData = !shimmer && d && d.ok && d.price != null;
-    const failed  = !shimmer && d && !d.ok;
-
-    const pct    = hasData ? d.changePct : null;
-    const dir    = pct == null ? 'flat' : pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
-    const sign   = pct != null && pct > 0 ? '+' : '';
-
-    const priceStr  = hasData ? `$${d.price.toFixed(2)}` : failed ? 'ERR' : '—';
-    const changeStr = hasData ? `${sign}${pct.toFixed(2)}%` : '—';
-
-    // Basis/YTD label
-    let ytdPct = hasData ? d.ytdPct : null;
-    let ytdLabel = 'YTD';
-    if (hasData) {
-      if (COST_BASIS[h.ticker] != null) {
-        ytdPct = ((d.price - COST_BASIS[h.ticker]) / COST_BASIS[h.ticker]) * 100;
-        ytdLabel = 'vs basis';
-      } else if (AUTO_BASIS_TICKERS.includes(h.ticker)) {
-        const ab = getAutoBasis(h.ticker);
-        if (ab != null) { ytdPct = ((d.price - ab) / ab) * 100; ytdLabel = 'vs basis'; }
-      }
+    function saveHoldings() {
+      holdings = holdings.map((_, i) => ({
+        ticker: document.getElementById(`t_${i}`).value.toUpperCase(),
+        name: document.getElementById(`n_${i}`).value,
+        alloc: parseFloat(document.getElementById(`a_${i}`).value) || 0
+      }));
+      localStorage.setItem('pt_holdings', JSON.stringify(holdings));
+      toggleEdit();
+      fetchPrices();
     }
 
-    const ytdDir  = ytdPct != null ? (ytdPct >= 0 ? 'up' : 'down') : 'flat';
-    const ytdSign = ytdPct != null && ytdPct >= 0 ? '+' : '';
-    const ytdStr  = ytdPct != null ? `${ytdSign}${ytdPct.toFixed(2)}% ${ytdLabel}` : `— ${ytdLabel}`;
-
-    const liveDot = hasData && d.isLive
-      ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--up);margin-right:5px;vertical-align:middle"></span>`
-      : '';
-
-    const barWidth  = Math.min(h.alloc, 100);
-    const isLoading = shimmer || (!hasData && !failed);
-
-    return `<div class="stock-card ${dir}">
-<div class="stock-rank">${String(i + 1).padStart(2, '0')}</div>
-<div class="stock-ticker">${h.ticker.replace('^', '')}</div>
-<div class="stock-right">
-  <div class="stock-price ${isLoading ? 'shimmer' : ''}">${isLoading ? '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' : liveDot + priceStr}</div>
-  <div class="stock-change ${dir} ${isLoading ? 'shimmer' : ''}">${isLoading ? '&nbsp;&nbsp;&nbsp;&nbsp;' : changeStr}</div>
-</div>
-<div class="stock-name">${h.name || ''}</div>
-<div class="stock-ytd ${ytdDir}">${isLoading ? '—' : ytdStr}</div>
-<div class="alloc-bar-wrap">
-  <div class="alloc-bar-bg" style="${h.alloc === 0 ? 'opacity:.2' : ''}">
-    <div class="alloc-bar-fill ${dir}" style="width:${barWidth}%"></div>
-  </div>
-  <div class="alloc-pct">${h.alloc > 0 ? h.alloc + '%' : '—'}</div>
-</div>
-</div>`;
-  }).join('');
-}
-
-function renderHeader() {
-  const hasAllocs = holdings.some(h => h.alloc > 0);
-  let w = 0;
-  holdings.forEach(h => {
-    const d = priceData[h.ticker];
-    if (d && d.ok && d.changePct != null) w += (h.alloc / 100) * d.changePct;
-  });
-  document.getElementById('totalValue').textContent = 'My Portfolio';
-  const el = document.getElementById('totalChange');
-  if (hasAllocs && Object.keys(priceData).length > 0) {
-    el.style.color = w >= 0 ? 'var(--up)' : 'var(--down)';
-    el.textContent = `${w >= 0 ? '+' : ''}${w.toFixed(2)}% today (weighted)`;
-  } else {
-    el.style.color = 'var(--dim)';
-    el.textContent = 'Set allocations to see weighted change';
-  }
-}
-
-/* ── Edit panel ──────────────────────────── */
-function openPanel()  {
-  renderHoldingsTable();
-  document.getElementById('panel').classList.add('open');
-  document.getElementById('backdrop').classList.add('open');
-}
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('backdrop').classList.remove('open');
-}
-function renderHoldingsTable() {
-  document.getElementById('holdingsBody').innerHTML = holdings.map((h, i) => `
-    <tr>
-      <td><input class="ticker-input" value="${h.ticker}" onchange="updateHolding(${i},'ticker',this.value.toUpperCase())" /></td>
-      <td><input value="${h.name || ''}" placeholder="optional" onchange="updateHolding(${i},'name',this.value)" /></td>
-      <td><input class="alloc-input" type="number" step="any" min="0" max="100" value="${h.alloc}" onchange="updateHolding(${i},'alloc',parseFloat(this.value)||0)" /></td>
-      <td><button class="btn-del" onclick="deleteRow(${i})">×</button></td>
-    </tr>`).join('');
-  updateAllocTotal();
-}
-function updateHolding(i, key, val) { holdings[i][key] = val; updateAllocTotal(); }
-function updateAllocTotal() {
-  const total   = holdings.reduce((s, h) => s + (h.alloc || 0), 0);
-  const rounded = Math.round(total * 10) / 10;
-  const cls     = rounded > 100 ? 'over' : rounded === 100 ? 'exact' : '';
-  document.getElementById('allocTotal').innerHTML = `Total: <span class="${cls}">${rounded}%</span>`;
-}
-function addRow()      { holdings.push({ ticker: '', name: '', alloc: 0 }); renderHoldingsTable(); }
-function deleteRow(i)  { holdings.splice(i, 1); renderHoldingsTable(); }
-function saveAndClose(){ holdings = holdings.filter(h => h.ticker.trim()); saveHoldings(); closePanel(); refreshAll(); }
-
-/* ── Boot ────────────────────────────────── */
-renderStocks(true);
-renderHeader();
-document.addEventListener('DOMContentLoaded', () => refreshAll());
-</script>
-
-
-</body></html>
+    // Auto Refresh Loop (60s)
+    fetchPrices();
+    setInterval(fetchPrices, 60000);
+  </script>
+</body>
+</html>
