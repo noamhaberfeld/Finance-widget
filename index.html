@@ -193,19 +193,15 @@
       { ticker: 'DTCR',  name: '',                       alloc: 0.083 },
     ];
 
-    // Map unsupported tickers directly to high-liquidity CORS-supported ETF symbols
-    const FINNHUB_SYMBOL_MAP = {
-      '^GSPC': 'SPY',   // S&P 500 ETF
-      'VTSAX': 'VTI',   // Vanguard Total Stock Market ETF
-      'FHAPX': 'AOA'    // Target Allocation Fund ETF Proxy
-    };
+    // Direct proxy targets for exact prices (S&P 500 Index + Mutual Fund NAVs)
+    const STOOQ_DIRECT = ['^GSPC', 'VTSAX', 'FHAPX'];
 
     const COST_BASIS = {
       'NOW': 101, 'CEG': 305.68, 'MU': 504.1,
       'POWL': 255, 'GRID': 185.2, 'VOLT': 38.5, 'URA': 54.46,
     };
     const AUTO_BASIS_TICKERS = ['DRAM'];
-    const HOLDINGS_VERSION = '10';
+    const HOLDINGS_VERSION = '12';
 
     let holdings = JSON.parse(localStorage.getItem('pt_holdings')) || DEFAULT_HOLDINGS;
     if (localStorage.getItem('pt_v') !== HOLDINGS_VERSION) {
@@ -216,31 +212,46 @@
 
     let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
-    async function fetchPrice(ticker) {
-      const apiSymbol = FINNHUB_SYMBOL_MAP[ticker] || ticker.replace('^', '');
-      
+    // Stooq Proxy fetch using .INX for the exact S&P 500 index level
+    async function fetchStooqProxy(ticker) {
       try {
-        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${API_KEY}`);
+        const symbol = (ticker === '^GSPC' || ticker === '.INX') ? '.inx' : ticker.toLowerCase() + '.us';
+        const targetUrl = `https://stooq.com/q/l/?s=${symbol}&f=sdlw2&e=csv`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const csvText = await res.text();
+          const lines = csvText.trim().split('\n');
+          if (lines.length > 1) {
+            const data = lines[1].split(',');
+            const price = parseFloat(data[3]);
+            if (!isNaN(price) && price > 0) {
+              return { price, prevClose: price };
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`Stooq Proxy error for ${ticker}:`, e);
+      }
+      return null;
+    }
+
+    async function fetchPrice(ticker) {
+      // 1. Fetch exact index level (.INX) & real mutual fund NAVs directly via Stooq
+      if (STOOQ_DIRECT.includes(ticker)) {
+        const stooqData = await fetchStooqProxy(ticker);
+        if (stooqData) return stooqData;
+      }
+
+      // 2. Fetch standard stocks/ETFs from Finnhub
+      try {
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${API_KEY}`);
         if (!res.ok) return null;
         const data = await res.json();
         
         if (data.c && data.c !== 0) {
-          let price = data.c;
-          let prevClose = data.pc;
-
-          // Scale SPY x10 to represent the actual S&P 500 Index level
-          if (ticker === '^GSPC') {
-            price = price * 10;
-            prevClose = prevClose * 10;
-          }
-
-          // Scale VTI to match VTSAX NAV ratio (~0.56x multiplier)
-          if (ticker === 'VTSAX') {
-            price = price * 0.5615;
-            prevClose = prevClose * 0.5615;
-          }
-
-          return { price, prevClose };
+          return { price: data.c, prevClose: data.pc };
         }
       } catch (e) {
         console.error(`Error fetching ${ticker}:`, e);
