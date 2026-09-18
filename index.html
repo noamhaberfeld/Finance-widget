@@ -193,19 +193,15 @@
       { ticker: 'DTCR',  name: '',                       alloc: 0.083 },
     ];
 
-    // Symbol Mapping for Finnhub unsupported types
-    const FINNHUB_SYMBOL_MAP = {
-      '^GSPC': 'SPY',   // S&P 500 Index -> SPY ETF
-      'VTSAX': 'VTI',   // Vanguard Total Stock Mutual Fund -> VTI ETF
-      'FHAPX': 'FLCPX'  // Fidelity 401K Mutual Fund -> Large Cap ETF proxy
-    };
+    // Tickers routed to Stooq for exact values (Index level + Mutual Fund NAVs)
+    const STOOQ_DIRECT = ['^GSPC', 'VTSAX', 'FHAPX'];
 
     const COST_BASIS = {
       'NOW': 101, 'CEG': 305.68, 'MU': 504.1,
       'POWL': 255, 'GRID': 185.2, 'VOLT': 38.5, 'URA': 54.46,
     };
     const AUTO_BASIS_TICKERS = ['DRAM'];
-    const HOLDINGS_VERSION = '6';
+    const HOLDINGS_VERSION = '9';
 
     let holdings = JSON.parse(localStorage.getItem('pt_holdings')) || DEFAULT_HOLDINGS;
     if (localStorage.getItem('pt_v') !== HOLDINGS_VERSION) {
@@ -216,12 +212,36 @@
 
     let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
-    async function fetchPrice(ticker) {
-      // Map unsupported symbols to working ETF tickers for price fetch
-      const apiSymbol = FINNHUB_SYMBOL_MAP[ticker] || ticker.replace('^', '');
-      
+    // Stooq CSV Fetcher for Index & Mutual Funds
+    async function fetchStooqData(ticker) {
       try {
-        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${API_KEY}`);
+        const cleanSymbol = ticker === '^GSPC' ? '^spx' : ticker.toLowerCase() + '.us';
+        const res = await fetch(`https://stooq.com/q/l/?s=${cleanSymbol}&f=sdlw2&e=csv`);
+        if (res.ok) {
+          const csvText = await res.text();
+          const lines = csvText.trim().split('\n');
+          if (lines.length > 1) {
+            const data = lines[1].split(',');
+            const price = parseFloat(data[3]);
+            if (!isNaN(price) && price > 0) {
+              return { price, prevClose: price };
+            }
+          }
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    async function fetchPrice(ticker) {
+      // 1. Direct Stooq query for ^GSPC, VTSAX, and FHAPX
+      if (STOOQ_DIRECT.includes(ticker)) {
+        const stooqData = await fetchStooqData(ticker);
+        if (stooqData) return stooqData;
+      }
+
+      // 2. Finnhub query for remaining stocks and ETFs
+      try {
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${API_KEY}`);
         if (!res.ok) return null;
         const data = await res.json();
         
