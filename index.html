@@ -157,7 +157,7 @@
     </div>
   </header>
 
-  <div id="error-banner">Failed to fetch updates for some symbols. Rate limit or symbol mismatch.</div>
+  <div id="error-banner">Some tickers could not be updated.</div>
 
   <main id="holdings-list"></main>
 
@@ -179,6 +179,7 @@
     const API_KEY = 'dam9sf1r01qvokaqo6q0dam9sf1r01qvokaqo6qg';
 
     const DEFAULT_HOLDINGS = [
+      { ticker: '^GSPC', name: 'S&P 500 (ref)',         alloc: 0     },
       { ticker: 'VTSAX', name: 'Vanguard Total Stock',   alloc: 81    },
       { ticker: 'NOW',   name: 'ServiceNow',             alloc: 9     },
       { ticker: 'FHAPX', name: '401K',                   alloc: 9     },
@@ -192,12 +193,19 @@
       { ticker: 'DTCR',  name: '',                       alloc: 0.083 },
     ];
 
+    // Symbol Mapping for Finnhub unsupported types
+    const FINNHUB_SYMBOL_MAP = {
+      '^GSPC': 'SPY',   // S&P 500 Index -> SPY ETF
+      'VTSAX': 'VTI',   // Vanguard Total Stock Mutual Fund -> VTI ETF
+      'FHAPX': 'FLCPX'  // Fidelity 401K Mutual Fund -> Large Cap ETF proxy
+    };
+
     const COST_BASIS = {
       'NOW': 101, 'CEG': 305.68, 'MU': 504.1,
       'POWL': 255, 'GRID': 185.2, 'VOLT': 38.5, 'URA': 54.46,
     };
     const AUTO_BASIS_TICKERS = ['DRAM'];
-    const HOLDINGS_VERSION = '5';
+    const HOLDINGS_VERSION = '6';
 
     let holdings = JSON.parse(localStorage.getItem('pt_holdings')) || DEFAULT_HOLDINGS;
     if (localStorage.getItem('pt_v') !== HOLDINGS_VERSION) {
@@ -209,13 +217,14 @@
     let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
     async function fetchPrice(ticker) {
-      // Ignore index tickers with '^' as Finnhub uses standard stock/ETF symbols
-      const cleanTicker = ticker.replace('^', '');
+      // Map unsupported symbols to working ETF tickers for price fetch
+      const apiSymbol = FINNHUB_SYMBOL_MAP[ticker] || ticker.replace('^', '');
+      
       try {
-        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${cleanTicker}&token=${API_KEY}`);
+        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${apiSymbol}&token=${API_KEY}`);
         if (!res.ok) return null;
         const data = await res.json();
-        // Finnhub response: c = current price, pc = previous close
+        
         if (data.c && data.c !== 0) {
           return { price: data.c, prevClose: data.pc };
         }
@@ -245,14 +254,12 @@
       document.getElementById('error-banner').style.display = 'none';
 
       let failedCount = 0;
-      // Stagger requests slightly to respect Finnhub free tier rate limits (60 requests/min)
       const results = [];
       for (const h of holdings) {
         const data = await fetchPrice(h.ticker);
         if (!data) failedCount++;
         results.push({ ...h, data });
-        // 50ms delay between fetches to stay under rate limits smoothly
-        await new Promise(r => setTimeout(r, 50));
+        await new Promise(r => setTimeout(r, 60));
       }
 
       if (failedCount > 0) {
