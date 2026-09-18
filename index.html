@@ -117,7 +117,6 @@
       100% { background-position: -200% 0; }
     }
 
-    /* Bottom Sheet Edit Panel */
     #edit-panel {
       position: fixed;
       bottom: -100%;
@@ -158,12 +157,12 @@
     </div>
   </header>
 
-  <div id="error-banner">Failed to fetch prices from primary sources. Retrying with fallback...</div>
+  <div id="error-banner">Some prices could not be updated. Retrying automatically...</div>
 
   <main id="holdings-list"></main>
 
   <div id="edit-panel">
-    <div style="display:flex; justify-size:space-between; align-items:center; margin-bottom:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="font-family:'Syne';">Edit Holdings</h3>
       <button class="btn" onclick="toggleEdit()">Done</button>
     </div>
@@ -199,7 +198,6 @@
     const AUTO_BASIS_TICKERS = ['DRAM'];
     const HOLDINGS_VERSION = '5';
 
-    // State Initialization
     let holdings = JSON.parse(localStorage.getItem('pt_holdings')) || DEFAULT_HOLDINGS;
     if (localStorage.getItem('pt_v') !== HOLDINGS_VERSION) {
       holdings = DEFAULT_HOLDINGS;
@@ -209,44 +207,53 @@
 
     let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
-    // Direct proxy fetch pipeline
+    // Robust fetch using Stooq CSV and fallback CORS endpoints
     async function fetchPrice(ticker) {
-      const cleanTicker = ticker.replace('^', '');
+      const cleanTicker = ticker.replace('^', '').toLowerCase();
       
-      // Target Endpoints: Yahoo Chart API via CORS proxies
-      const urls = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`)}`,
-        `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`)}`,
-        `https://stooq.com/q/l/?s=${cleanTicker}.us&f=sdlw2&e=json`
-      ];
+      // Secondary ticker map for Stooq indices
+      const stooqSymbol = ticker === '^GSPC' ? '^spx' : `${cleanTicker}.us`;
 
-      for (const url of urls) {
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 6000);
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(timeout);
-
-          if (!res.ok) continue;
-          const data = await res.json();
-
-          // Handle Yahoo Finance Chart Structure
-          if (data?.chart?.result?.[0]) {
-            const meta = data.chart.result[0].meta;
-            const price = meta.regularMarketPrice;
-            const prevClose = meta.chartPreviousClose || meta.previousClose;
-            return { price, prevClose };
+      // 1. Primary: Try Direct Stooq CSV Download
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`https://stooq.com/q/l/?s=${stooqSymbol}&f=sdlw2&e=csv`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const csvText = await res.text();
+          const lines = csvText.trim().split('\n');
+          if (lines.length > 1) {
+            const data = lines[1].split(',');
+            const price = parseFloat(data[3]);
+            if (!isNaN(price) && price > 0) {
+              return { price, prevClose: price };
+            }
           }
-          
-          // Handle Stooq Data Structure
-          if (data?.symbols?.[0]?.close) {
-            const price = parseFloat(data.symbols[0].close);
-            return { price, prevClose: price };
-          }
-        } catch (e) {
-          continue;
         }
-      }
+      } catch (e) {}
+
+      // 2. Fallback: Query open market API via Cloudflare CORS bypass
+      try {
+        const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          if (meta?.regularMarketPrice) {
+            return {
+              price: meta.regularMarketPrice,
+              prevClose: meta.chartPreviousClose || meta.previousClose
+            };
+          }
+        }
+      } catch (e) {}
+
       return null;
     }
 
@@ -293,7 +300,6 @@
         let changeClass = '';
 
         if (price) {
-          // Auto Basis logic for specific tickers
           if (AUTO_BASIS_TICKERS.includes(item.ticker) && !autoBasis[item.ticker]) {
             autoBasis[item.ticker] = price;
             localStorage.setItem('pt_auto_basis', JSON.stringify(autoBasis));
@@ -353,7 +359,6 @@
       fetchPrices();
     }
 
-    // Auto Refresh Loop (60s)
     fetchPrices();
     setInterval(fetchPrices, 60000);
   </script>
