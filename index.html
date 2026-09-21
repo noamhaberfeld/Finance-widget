@@ -215,7 +215,10 @@
 
     let autoBasis = JSON.parse(localStorage.getItem('pt_auto_basis')) || {};
 
-    const TIMEOUT_MS = 8000;
+    // Which proxy won last time — start with it next refresh
+    let preferredProxy = localStorage.getItem('pt_preferred_proxy') || null;
+
+    const TIMEOUT_MS = 4000;
 
     function fetchWithTimeout(url, opts = {}) {
       const ctrl = new AbortController();
@@ -224,39 +227,69 @@
         .finally(() => clearTimeout(id));
     }
 
-    async function fetchYahooDirect(ticker) {
+    function parseYahooV8(json) {
       try {
-        const sym = encodeURIComponent(ticker);
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
-        const res = await fetchWithTimeout(url, { credentials: 'include' });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return parseYahooV8(json);
+        const result = json?.chart?.result?.[0];
+        if (!result) return null;
+        const meta = result.meta;
+        const price = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || meta.previousClose;
+        if (!price || price === 0) return null;
+        return { price, prevClose };
       } catch { return null; }
     }
 
-    async function fetchYahooProxy1(ticker) {
+    function makeYahooUrl(ticker) {
+      const sym = encodeURIComponent(ticker);
+      return `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
+    }
+
+    async function tryProxy(proxyName, ticker) {
+      const target = makeYahooUrl(ticker);
+      let url;
+      if (proxyName === 'allorigins') {
+        url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
+      } else if (proxyName === 'corsproxy') {
+        url = `https://corsproxy.io/?${encodeURIComponent(target)}`;
+      } else if (proxyName === 'codetabs') {
+        url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
+      }
       try {
-        const sym = encodeURIComponent(ticker);
-        const target = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
-        const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
         const res = await fetchWithTimeout(url);
         if (!res.ok) return null;
         const json = await res.json();
-        return parseYahooV8(json);
+        const data = parseYahooV8(json);
+        return data ? { ...data, src: proxyName } : null;
       } catch { return null; }
     }
 
-    async function fetchYahooProxy2(ticker) {
-      try {
-        const sym = encodeURIComponent(ticker);
-        const target = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
-        const url = `https://corsproxy.io/?${encodeURIComponent(target)}`;
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) return null;
-        const json = await res.json();
-        return parseYahooV8(json);
-      } catch { return null; }
+    // Race all proxies — return first valid response
+    async function fetchYahooRace(ticker) {
+      const proxies = ['allorigins', 'corsproxy', 'codetabs'];
+
+      // Put preferred proxy first if we have one
+      if (preferredProxy && proxies.includes(preferredProxy)) {
+        const idx = proxies.indexOf(preferredProxy);
+        proxies.splice(idx, 1);
+        proxies.unshift(preferredProxy);
+      }
+
+      return new Promise((resolve) => {
+        let settled = false;
+        let remaining = proxies.length;
+
+        proxies.forEach(proxy => {
+          tryProxy(proxy, ticker).then(result => {
+            remaining--;
+            if (result && !settled) {
+              settled = true;
+              resolve(result);
+            } else if (remaining === 0 && !settled) {
+              resolve(null);
+            }
+          });
+        });
+      });
     }
 
     async function fetchStooq(ticker) {
@@ -273,38 +306,25 @@
         const price = parseFloat(cols[3]);
         const prevClose = parseFloat(cols[2]);
         if (!isNaN(price) && price > 0) {
-          return { price, prevClose: isNaN(prevClose) ? price : prevClose };
+          return { price, prevClose: isNaN(prevClose) ? price : prevClose, src: 'stooq' };
         }
       } catch { return null; }
       return null;
     }
 
-    function parseYahooV8(json) {
-      try {
-        const result = json?.chart?.result?.[0];
-        if (!result) return null;
-        const meta = result.meta;
-        const price = meta.regularMarketPrice;
-        const prevClose = meta.chartPreviousClose || meta.previousClose;
-        if (!price || price === 0) return null;
-        return { price, prevClose };
-      } catch { return null; }
-    }
-
     async function fetchPrice(ticker) {
-      let data = await fetchYahooDirect(ticker);
-      if (data) return { ...data, src: 'yahoo-direct' };
-
-      data = await fetchYahooProxy1(ticker);
-      if (data) return { ...data, src: 'yahoo-proxy1' };
-
-      data = await fetchYahooProxy2(ticker);
-      if (data) return { ...data, src: 'yahoo-proxy2' };
-
-      data = await fetchStooq(ticker);
-      if (data) return { ...data, src: 'stooq' };
-
-      return null;
+      // Race all Yahoo proxies simultaneously
+      const data = await fetchYahooRace(ticker);
+      if (data) {
+        // Remember which proxy won for next time
+        if (data.src !== preferredProxy) {
+          preferredProxy = data.src;
+          localStorage.setItem('pt_preferred_proxy', preferredProxy);
+        }
+        return data;
+      }
+      // Last resort: Stooq
+      return await fetchStooq(ticker);
     }
 
     function renderLoading() {
@@ -331,17 +351,19 @@
       const results = [];
       const sources = new Set();
 
-      for (const h of holdings) {
-        const data = await fetchPrice(h.ticker);
+      // Fetch all tickers in parallel
+      const fetches = holdings.map(h => fetchPrice(h.ticker));
+      const dataArr = await Promise.all(fetches);
+
+      dataArr.forEach((data, i) => {
         if (!data) { failedCount++; } else { sources.add(data.src); }
-        results.push({ ...h, data });
-        await new Promise(r => setTimeout(r, 80));
-      }
+        results.push({ ...holdings[i], data });
+      });
 
       if (failedCount > 0) {
         const banner = document.getElementById('error-banner');
         banner.style.display = 'block';
-        banner.textContent = `${failedCount} ticker(s) unavailable. Sources tried: Yahoo, Stooq.`;
+        banner.textContent = `${failedCount} ticker(s) unavailable.`;
       }
 
       if (sources.size > 0) {
