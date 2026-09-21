@@ -164,7 +164,7 @@
     </div>
   </header>
 
-  <div id="error-banner">Some tickers could not be updated.</div>
+  <div id="error-banner"></div>
   <div id="source-badge"></div>
 
   <main id="holdings-list"></main>
@@ -224,7 +224,6 @@
         .finally(() => clearTimeout(id));
     }
 
-    // Yahoo Finance v8 — direct (works if browser has Yahoo cookies / no strict privacy mode)
     async function fetchYahooDirect(ticker) {
       try {
         const sym = encodeURIComponent(ticker);
@@ -236,7 +235,6 @@
       } catch { return null; }
     }
 
-    // Yahoo via allorigins proxy
     async function fetchYahooProxy1(ticker) {
       try {
         const sym = encodeURIComponent(ticker);
@@ -249,7 +247,6 @@
       } catch { return null; }
     }
 
-    // Yahoo via corsproxy.io
     async function fetchYahooProxy2(ticker) {
       try {
         const sym = encodeURIComponent(ticker);
@@ -262,12 +259,10 @@
       } catch { return null; }
     }
 
-    // Stooq CSV fallback (good for ^GSPC, VTSAX, FHAPX)
     async function fetchStooq(ticker) {
       try {
         const symbol = (ticker === '^GSPC') ? '.inx' : ticker.toLowerCase() + '.us';
         const target = `https://stooq.com/q/l/?s=${symbol}&f=sd2c4&e=csv`;
-        // columns: Symbol, Date, Close, Last
         const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
         const res = await fetchWithTimeout(url);
         if (!res.ok) return null;
@@ -275,7 +270,6 @@
         const lines = text.trim().split('\n');
         if (lines.length < 2) return null;
         const cols = lines[1].split(',');
-        // f=sd2c4 => Symbol, Date, Close(prev), Last(current)
         const price = parseFloat(cols[3]);
         const prevClose = parseFloat(cols[2]);
         if (!isNaN(price) && price > 0) {
@@ -298,19 +292,15 @@
     }
 
     async function fetchPrice(ticker) {
-      // Try Yahoo direct first (fastest, most reliable when cookies present)
       let data = await fetchYahooDirect(ticker);
       if (data) return { ...data, src: 'yahoo-direct' };
 
-      // Proxy 1: allorigins → Yahoo
       data = await fetchYahooProxy1(ticker);
       if (data) return { ...data, src: 'yahoo-proxy1' };
 
-      // Proxy 2: corsproxy → Yahoo
       data = await fetchYahooProxy2(ticker);
       if (data) return { ...data, src: 'yahoo-proxy2' };
 
-      // Last resort: Stooq (limited tickers but no API key needed)
       data = await fetchStooq(ticker);
       if (data) return { ...data, src: 'stooq' };
 
@@ -349,9 +339,9 @@
       }
 
       if (failedCount > 0) {
-        document.getElementById('error-banner').style.display = 'block';
-        document.getElementById('error-banner').textContent =
-          `${failedCount} ticker(s) unavailable. Sources tried: Yahoo, Stooq.`;
+        const banner = document.getElementById('error-banner');
+        banner.style.display = 'block';
+        banner.textContent = `${failedCount} ticker(s) unavailable. Sources tried: Yahoo, Stooq.`;
       }
 
       if (sources.size > 0) {
